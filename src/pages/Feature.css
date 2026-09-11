@@ -1,0 +1,423 @@
+.feature-page {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  background: #f8faf9;
+}
+
+.feature-main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 36px 4% 60px;
+}
+
+.feature-header h1 {
+  margin: 0 0 6px;
+  font-size: 1.7rem;
+  color: #1a1a2e;
+}
+
+.feature-header p {
+  color: #666;
+  margin: 0 0 30px;
+  font-size: 1rem;
+}
+
+.savings-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.btn-primary-dark {
+  padding: 12px 24px;
+  background: #0a7d4f;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+
+.btn-outline-dark {
+  padding: 12px 24px;
+  background: #fff;
+  color: #333;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 50px 20px;
+  color: #999;
+  background: #fff;
+  border-radius: 14px;
+}
+
+.empty-sub {
+  font-size: 0.9rem;
+  margin-top: 6px;
+}
+
+.section-title {
+  font-size: 1.15rem;
+  margin: 36px 0 18px;
+  color: #1a1a2e;
+}
+
+/* Grants */
+.grants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grant-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #0a7d4f;
+}
+
+.grant-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.grant-type {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  background: #e0f2e9;
+  border-radius: 6px;
+  color: #0a7d4f;
+  font-weight: 600;
+}
+
+.grant-deadline {
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.grant-card h3 {
+  margin: 0 0 6px;
+}
+
+.grant-amount {
+  font-weight: 700;
+  color: #0a7d4f;
+  font-size: 1.05rem;
+  margin: 0 0 6px;
+}
+
+.grant-desc {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0 0 14px;
+}
+
+.grant-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-check {
+  padding: 9px 16px;
+  border: 1.5px solid #0a7d4f;
+  background: #fff;
+  color: #0a7d4f;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-apply {
+  padding: 9px 16px;
+  background: #0a7d4f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* Savings groups */
+.groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.group-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.group-amount {
+  font-weight: 700;
+  color: #ff9f1c;
+  margin: 6px 0;
+}
+
+.group-meta {
+  color: #777;
+  font-size: 0.85rem;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.progress-bar div {
+  height: 100%;
+  background: #0a7d4f;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.btn-join {
+  padding: 10px 20px;
+  background: #0a7d4f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.88rem;
+  margin-top: 8px;
+}
+
+/* Suppliers */
+.suppliers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+.supplier-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.supplier-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.supplier-card h3 {
+  margin: 0 0 4px;
+}
+
+.supplier-name {
+  color: #777;
+  font-size: 0.85rem;
+  margin: 0 0 14px;
+}
+
+.price-comparison {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+
+.price-old,
+.price-new {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.price-old {
+  background: #f5f5f5;
+}
+
+.price-old strong {
+  color: #999;
+  text-decoration: line-through;
+}
+
+.price-new {
+  background: #e0f2e9;
+}
+
+.price-new strong {
+  color: #0a7d4f;
+}
+
+.price-old span,
+.price-new span {
+  display: block;
+  font-size: 0.75rem;
+  color: #777;
+  margin-bottom: 4px;
+}
+
+.order-progress span {
+  display: block;
+  font-size: 0.85rem;
+  color: #777;
+  margin-bottom: 6px;
+}
+
+/* Finance */
+.finance-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.fin-card {
+  padding: 18px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.fin-card span {
+  display: block;
+  font-size: 0.8rem;
+  color: #777;
+  margin-bottom: 4px;
+}
+
+.fin-card strong {
+  font-size: 1.3rem;
+}
+
+.fin-card.income strong {
+  color: #0a7d4f;
+}
+
+.fin-card.expense strong {
+  color: #d64545;
+}
+
+.fin-card.profit strong {
+  color: #1a1a2e;
+}
+
+.finance-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.finance-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 30px;
+}
+
+.finance-table th {
+  background: #f8f8f8;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.8rem;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.finance-table td {
+  padding: 14px 16px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+}
+
+.type-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.type-badge.income {
+  background: #e0f2e9;
+  color: #0a7d4f;
+}
+
+.type-badge.expense {
+  background: #fee2e2;
+  color: #d64545;
+}
+
+.amount-green {
+  color: #0a7d4f;
+  font-weight: 600;
+}
+
+.amount-red {
+  color: #d64545;
+  font-weight: 600;
+}
+
+/* Info box */
+.info-box {
+  background: #f0faf5;
+  border: 1px solid #c6e8d8;
+  border-radius: 12px;
+  padding: 22px;
+  margin-top: 30px;
+}
+
+.info-box h4 {
+  margin: 0 0 6px;
+  color: #0a7d4f;
+}
+
+.info-box p {
+  margin: 0 0 10px;
+  color: #555;
+  font-size: 0.92rem;
+}
+
+.btn-ai-link {
+  color: #0a7d4f;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.btn-ai-link:hover {
+  text-decoration: underline;
+}
+
+.china-box {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.china-box h4 {
+  color: #2563eb;
+}
