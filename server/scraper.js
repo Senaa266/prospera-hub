@@ -233,6 +233,7 @@ export async function refreshGrants() {
   const enriched = await parallel(rows, 6, enrich)
 
   let finalRows = enriched
+  let aiUsed = false
   if (aiConfigured()) {
     try {
       const accepted = await classifyGrants(
@@ -247,6 +248,7 @@ export async function refreshGrants() {
             return { ...r, source: a.org || r.source, externalUrl: a.officialUrl || r.funder }
           })
           .filter(Boolean)
+        aiUsed = true
         console.log(`[scraper] AI kept ${finalRows.length} of ${enriched.length} candidates`)
       } else {
         console.warn('[scraper] AI rejected every candidate — keeping heuristic list')
@@ -287,6 +289,10 @@ export async function refreshGrants() {
     db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(
       KEY_LAST,
       String(stamp)
+    )
+    db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(
+      'grants_last_mode',
+      aiUsed ? 'ai' : 'heuristic'
     )
     db.exec('COMMIT')
   } catch (err) {

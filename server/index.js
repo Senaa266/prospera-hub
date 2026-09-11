@@ -1,6 +1,11 @@
 import 'dotenv/config'
+import { config as loadEnv } from 'dotenv'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
+
+loadEnv({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') })
 
 import authRoutes from './routes/auth.js'
 import grantRoutes from './routes/grants.js'
