@@ -1,0 +1,103 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0faf5, #e8f5ee);
+  padding: 20px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 45px 40px;
+  width: 100%;
+  max-width: 430px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+.auth-card h2 {
+  margin: 0 0 6px;
+  color: #1a1a2e;
+  font-size: 1.6rem;
+}
+
+.auth-sub {
+  color: #777;
+  margin: 0 0 24px;
+  font-size: 0.95rem;
+}
+
+.auth-tabs {
+  display: flex;
+  background: #f0f0f0;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.auth-tabs button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #666;
+}
+
+.auth-tabs button.active {
+  background: #fff;
+  color: #0a7d4f;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+form label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  margin: 14px 0 6px;
+}
+
+form input,
+form select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+form input:focus,
+form select:focus {
+  outline: none;
+  border-color: #0a7d4f;
+}
+
+.auth-error {
+  color: #d64545;
+  font-size: 0.85rem;
+  margin: 12px 0 0;
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 22px;
+  padding: 14px;
+  background: #0a7d4f;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-submit:hover {
+  background: #096b43;
+}
