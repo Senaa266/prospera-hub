@@ -2,11 +2,12 @@ import OpenAI from 'openai'
 import { chatRequestSchema } from '../lib/chatSchema.js'
 import { PROSPERA_SYSTEM_PROMPT } from '../lib/prompts/prosperaSystemPrompt.js'
 import { getFinanceSnapshot } from './finance.js'
+import { streamGeminiChat } from '../lib/geminiStream.js'
 
-const MODEL = 'gpt-4o'
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
 /**
- * Appends verified user context to the system prompt. Missing fields stay omitted.
+ * Appends verified user context to Sena's system instruction.
  * @param {{ name?: string, country?: string, businessName?: string, financialSnapshot?: object } | undefined} userContext
  * @returns {string}
  */
@@ -27,17 +28,19 @@ export function buildSystemMessage(userContext) {
 }
 
 /**
- * Offline / unconfigured reply that still honours Sena's scope rules.
+ * Local Sena reply when no live provider key is set, so the chat still works.
  * @param {string} userText
- * @param {{ financialSnapshot?: object } | undefined} userContext
- * @returns {string}
+ * @param {{ financialSnapshot?: object, name?: string } | undefined} userContext
  */
 export function buildFallbackReply(userText, userContext) {
-  const text = userText.toLowerCase()
+  const text = userText.toLowerCase().trim()
+  const name = userContext?.name ? ` ${userContext.name.split(' ')[0]}` : ''
 
-  if (
-    /system prompt|ignore (all|previous) instructions|reveal your instructions/.test(text)
-  ) {
+  if (/^(hi|hello|hey|good (morning|afternoon|evening)|howdy)\b/.test(text)) {
+    return `Hi${name} — I'm Sena, your Prospera business coach.\n\nI can help you price a product, turn an idea into a 90-day plan, read your books, or find a grant fit.\n\nWhat are you working on today?`
+  }
+
+  if (/system prompt|ignore (all|previous) instructions|reveal your instructions/.test(text)) {
     return "That's outside what I can help with as your business coach. I focus on strategy, finance, and Prospera — want to talk about pricing, a 90-day plan, or reading your records?"
   }
 
@@ -96,10 +99,8 @@ function setSseHeaders(res) {
 }
 
 /**
- * Streams plain text in small chunks so the UI can render token-by-token without a key.
  * @param {import('express').Response} res
  * @param {string} text
- * @returns {Promise<void>}
  */
 async function streamPlainText(res, text) {
   const parts = text.split(/(\s+)/)
@@ -108,13 +109,34 @@ async function streamPlainText(res, text) {
     writeSse(res, { content: part })
     await new Promise((resolve) => setTimeout(resolve, 12))
   }
-  writeSse(res, { done: true })
-  res.end()
 }
 
 /**
- * POST /api/ai/chat — streams Sena's reply via SSE.
- * Never logs full message contents.
+ * Streams via OpenAI when Gemini is not configured.
+ * @param {import('express').Response} res
+ * @param {string} system
+ * @param {Array<{ role: 'user' | 'assistant', content: string }>} messages
+ */
+async function streamOpenAiChat(res, system, messages) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  const openai = new OpenAI({ apiKey, timeout: 40_000 })
+  const stream = await openai.chat.completions.create({
+    model: OPENAI_MODEL,
+    stream: true,
+    temperature: 0.7,
+    max_tokens: 800,
+    messages: [{ role: 'system', content: system }, ...messages],
+  })
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content
+    if (delta) writeSse(res, { content: delta })
+  }
+}
+
+/**
+ * POST /api/ai/chat — live Gemini (preferred) or OpenAI stream. No mock replies.
+ * Never logs full message contents. API keys stay on the server.
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
@@ -125,55 +147,53 @@ export async function chat(req, res) {
   }
 
   const { messages, userContext: clientContext } = parsed.data
-  const lastUser = [...messages].reverse().find((item) => item.role === 'user')
   const userContext = {
     ...clientContext,
-    financialSnapshot:
-      clientContext?.financialSnapshot || getFinanceSnapshot(req.user?.id),
+    financialSnapshot: clientContext?.financialSnapshot || getFinanceSnapshot(req.user?.id),
   }
+  const system = buildSystemMessage(userContext)
+  const hasGemini = Boolean(process.env.GEMINI_API_KEY?.trim())
+  const hasOpenAi = Boolean(process.env.OPENAI_API_KEY?.trim())
 
   console.info('[ai.chat]', {
     messageCount: messages.length,
     hasContext: Boolean(userContext),
+    provider: hasGemini ? 'gemini' : hasOpenAi ? 'openai' : 'none',
   })
 
-  const apiKey = process.env.OPENAI_API_KEY?.trim()
-  if (!apiKey) {
-    setSseHeaders(res)
-    return streamPlainText(res, buildFallbackReply(lastUser?.content ?? '', userContext))
-  }
-
   try {
-    const openai = new OpenAI({ apiKey })
-    const stream = await openai.chat.completions.create({
-      model: MODEL,
-      stream: true,
-      temperature: 0.7,
-      max_tokens: 700,
-      messages: [
-        { role: 'system', content: buildSystemMessage(userContext) },
-        ...messages.map((item) => ({ role: item.role, content: item.content })),
-      ],
-    })
-
     setSseHeaders(res)
 
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content
-      if (delta) writeSse(res, { content: delta })
+    if (hasGemini) {
+      await streamGeminiChat({
+        systemInstruction: system,
+        messages,
+        onDelta: (text) => writeSse(res, { content: text }),
+      })
+    } else if (hasOpenAi) {
+      await streamOpenAiChat(res, system, messages)
+    } else {
+      const lastUser = [...messages].reverse().find((item) => item.role === 'user')
+      await streamPlainText(res, buildFallbackReply(lastUser?.content ?? '', userContext))
     }
 
     writeSse(res, { done: true })
     res.end()
-  } catch {
+  } catch (error) {
+    const status = typeof error?.status === 'number' ? error.status : 500
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : 'Sena is unavailable right now. Please try again.'
+
     console.error('[ai.chat] provider_error')
+
     if (res.headersSent) {
-      writeSse(res, { error: 'Sena is unavailable right now. Please try again.' })
+      writeSse(res, { error: message })
       res.end()
       return
     }
-    return res.status(500).json({
-      message: 'Sena is unavailable right now. Please try again.',
-    })
+
+    return res.status(status >= 400 && status < 600 ? status : 500).json({ message })
   }
 }

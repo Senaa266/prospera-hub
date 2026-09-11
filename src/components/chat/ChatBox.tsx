@@ -97,6 +97,11 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
       abortRef.current?.abort()
       const controller = new AbortController()
       abortRef.current = controller
+      let timedOut = false
+      const timeoutId = window.setTimeout(() => {
+        timedOut = true
+        controller.abort()
+      }, 45_000)
 
       const userMessage = createChatMessage('user', trimmed)
       const assistantMessage = createChatMessage('assistant', '')
@@ -128,13 +133,17 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
           },
         )
       } catch (caught) {
-        if (controller.signal.aborted) return
-        const message =
-          caught instanceof Error ? caught.message : 'Sena is unavailable right now. Please try again.'
+        if (controller.signal.aborted && !timedOut) return
+        const message = timedOut
+          ? 'Sena timed out. Please try again.'
+          : caught instanceof Error
+            ? caught.message
+            : 'Sena is unavailable right now. Please try again.'
         setError(message)
         setMessages((current) => current.filter((item) => item.id !== assistantMessage.id))
       } finally {
-        if (!controller.signal.aborted) setLoading(false)
+        window.clearTimeout(timeoutId)
+        if (!controller.signal.aborted || timedOut) setLoading(false)
       }
     },
     [loading, token, userContext],

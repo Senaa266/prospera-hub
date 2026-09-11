@@ -44,7 +44,7 @@ export type StreamChatOptions = {
 
 /**
  * Streams Sena's reply from POST /api/ai/chat.
- * The OpenAI key never leaves the server — this client only sends messages.
+ * Provider keys stay on the server — this client only sends messages.
  */
 export async function streamChatCompletion(
   payload: ChatRequest,
