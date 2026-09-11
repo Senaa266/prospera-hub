@@ -3,42 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Sidebar from '../components/layout/Sidebar'
 import Icon from '../components/icons'
+import GrantCard from '../components/GrantCard'
+import { loadGrants } from '../utils/grants'
+import { DEMO_GRANTS } from '../data/grants'
 import './Dashboard.css'
-
-const GRANTS = [
-  {
-    title: 'Ghana Startup Grant',
-    tag: 'Tech · Innovation',
-    desc: 'Up to GH₵ 25,000 for registered startups under 3 years building tech solutions.',
-    amount: 'GH₵ 5,000 – 25,000',
-    deadline: 'Closes 30 Sep 2026',
-    gradient: 'linear-gradient(120deg, #0e0e11 0%, #f10178 135%)',
-  },
-  {
-    title: 'AfDB Youth Fund',
-    tag: 'All sectors',
-    desc: 'For African entrepreneurs aged 18–35 with a strong business plan.',
-    amount: 'GH₵ 10,000 – 100,000',
-    deadline: 'Closes 15 Nov 2026',
-    gradient: 'linear-gradient(120deg, #4338ca 0%, #1e1b4b 100%)',
-  },
-  {
-    title: 'Google Africa Fund',
-    tag: 'Digital · Tech',
-    desc: 'Equity-free funding for digital-first startups solving local problems.',
-    amount: '$10,000 – 50,000',
-    deadline: 'Rolling applications',
-    gradient: 'linear-gradient(120deg, #16080e 0%, #be185d 160%)',
-  },
-  {
-    title: 'Women-Led Business Boost',
-    tag: 'Women entrepreneurs',
-    desc: 'Grants for women-owned businesses in retail, food and crafts.',
-    amount: 'GH₵ 8,000 – 20,000',
-    deadline: 'Closes 22 Oct 2026',
-    gradient: 'linear-gradient(120deg, #1e1b4b 0%, #f10178 135%)',
-  },
-]
 
 const STATS = [
   { label: 'Total savings', value: 'GH₵ 2,450', icon: 'wallet', change: '+12% this week', grad: 'linear-gradient(135deg,#e11d48,#9f1239)' },
@@ -52,12 +20,23 @@ const SUGGESTIONS = ['How do I start my bead business?', 'Which grants fit my bu
 function Dashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [bannerIndex, setBannerIndex] = useState(0)
+  const [featured, setFeatured] = useState(DEMO_GRANTS.slice(0, 4))
+  const [featuredLive, setFeaturedLive] = useState(false)
   const [chatInput, setChatInput] = useState('')
 
   useEffect(() => {
-    const timer = setInterval(() => setBannerIndex((prev) => (prev + 1) % GRANTS.length), 5000)
-    return () => clearInterval(timer)
+    let active = true
+    const load = async () => {
+      const { grants, live } = await loadGrants()
+      if (active) {
+        setFeatured(grants.slice(0, 4))
+        setFeaturedLive(live)
+      }
+    }
+    load()
+    return () => {
+      active = false
+    }
   }, [])
 
   const hour = new Date().getHours()
@@ -73,8 +52,6 @@ function Dashboard() {
     e.preventDefault()
     navigate('/ai-chat')
   }
-
-  const banner = GRANTS[bannerIndex]
 
   return (
     <div className="dashboard">
@@ -94,42 +71,30 @@ function Dashboard() {
           </button>
         </header>
 
-        <div className="grant-banner">
-          <div className="banner-inner" key={bannerIndex} style={{ background: banner.gradient }}>
-            <div className="banner-content">
-              <span className="banner-tag">{banner.tag}</span>
-              <h2>{banner.title}</h2>
-              <p>{banner.desc}</p>
-              <div className="banner-meta">
-                <span className="banner-amount">{banner.amount}</span>
-                <span className="banner-deadline">
-                  <Icon name="clock" size={14} />
-                  {banner.deadline}
-                </span>
-                <span className="banner-cta">
-                  View details <Icon name="chevron" size={14} />
-                </span>
-              </div>
+        <section className="dash-grants">
+          <div className="section-head">
+            <div>
+              <h2>Opportunities for you</h2>
+              <p>Hand-picked funding pulled live from external sources.</p>
             </div>
-            <div className="banner-deco">
-              <span className="deco-ring" />
-              <span className="deco-ring deco-ring-2" />
-              <span className="deco-bar" />
-              <span className="deco-bar deco-bar-2" />
+            <div className="section-actions">
+              <span className="live-pill">
+                <span className="live-dot" />
+                {featuredLive ? 'Live' : 'Demo'}
+              </span>
+              <button className="view-all" type="button" onClick={() => navigate('/grants')}>
+                View all grants
+                <Icon name="arrowRight" size={16} />
+              </button>
             </div>
           </div>
-          <div className="banner-dots">
-            {GRANTS.map((g, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`banner-dot ${i === bannerIndex ? 'active' : ''}`}
-                onClick={() => setBannerIndex(i)}
-                aria-label={`Grant ${i + 1}`}
-              />
+
+          <div className="dash-grants-grid">
+            {featured.map((g) => (
+              <GrantCard key={g.id ?? g.title} grant={g} onExplore={() => navigate('/grants')} />
             ))}
           </div>
-        </div>
+        </section>
 
         <section className="stats-grid">
           {STATS.map((s) => (

@@ -2,6 +2,30 @@ import { db } from '../db.js'
 
 const toRow = (t) => ({ id: t.id, type: t.type, desc: t.description, amount: t.amount, date: t.date })
 
+/**
+ * Builds a logged financial snapshot for the user's own transactions.
+ * Returns undefined when the user has no books logged yet.
+ * @param {number} userId
+ */
+export function getFinanceSnapshot(userId) {
+  const rows = db
+    .prepare('SELECT type, amount FROM transactions WHERE user_id = ?')
+    .all(userId)
+  if (rows.length === 0) return undefined
+
+  const revenue = rows.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
+  const expenses = rows.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+
+  return {
+    currency: 'GH₵',
+    revenue,
+    expenses,
+    profit: revenue - expenses,
+    notes: `${rows.length} logged transactions`,
+    transactionCount: rows.length,
+  }
+}
+
 export function listTransactions(req, res) {
   const rows = db
     .prepare(

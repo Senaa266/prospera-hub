@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import Icon from '../components/icons'
 import './Auth.css'
 
 function Login() {
   const [mode, setMode] = useState('login')
-  const [form, setForm] = useState({ name: '', email: '', password: '', businessType: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [showPass, setShowPass] = useState(false)
   const { login, register } = useAuth()
   const navigate = useNavigate()
 
@@ -15,85 +18,135 @@ function Login() {
     setError('')
   }
 
-  const handleSubmit = (e) => {
+  const switchMode = (next) => {
+    setMode(next)
+    setError('')
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (mode === 'login') {
-      login({ email: form.email, password: form.password })
-    } else {
-      register(form)
+
+    if (!form.email || !form.password) {
+      setError('Email and password are required')
+      return
     }
-    navigate('/dashboard')
+    if (mode === 'signup' && !form.name) {
+      setError('Please enter your name')
+      return
+    }
+
+    setLoading(true)
+    try {
+      if (mode === 'login') {
+        await login({ email: form.email, password: form.password })
+      } else {
+        await register({ ...form })
+      }
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h2>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h2>
-        <p className="auth-sub">
-          {mode === 'login'
-            ? 'Log in to your Prospera Hub account'
-            : 'Join the platform for African entrepreneurs'}
-        </p>
+        <div className="auth-brand">
+          <span className="auth-brand-mark">P</span>
+          <span className="auth-brand-name">ProsperaHub</span>
+        </div>
 
-        <div className="auth-tabs">
+        <div className="auth-toggle">
           <button
-            className={mode === 'login' ? 'active' : ''}
-            onClick={() => setMode('login')}
             type="button"
+            className={mode === 'login' ? 'active' : ''}
+            onClick={() => switchMode('login')}
           >
             Log in
           </button>
           <button
-            className={mode === 'signup' ? 'active' : ''}
-            onClick={() => setMode('signup')}
             type="button"
+            className={mode === 'signup' ? 'active' : ''}
+            onClick={() => switchMode('signup')}
           >
             Sign up
           </button>
         </div>
 
+        <div className="auth-head">
+          <h1>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+          <p>
+            {mode === 'login'
+              ? 'Log in to keep building your business.'
+              : 'Join African women entrepreneurs saving, funding and scaling together.'}
+          </p>
+        </div>
+
         <form onSubmit={handleSubmit}>
           {mode === 'signup' && (
-            <>
-              <label>Full name</label>
+            <div className="field">
+              <label htmlFor="name">Full name</label>
               <input
+                id="name"
                 name="name"
                 value={form.name}
                 onChange={handleChange}
-                placeholder="Your name"
+                placeholder="e.g. Ama Owusu"
+                autoComplete="name"
               />
-              <label>Industry</label>
-              <select name="businessType" value={form.businessType} onChange={handleChange}>
-                <option value="">Select your industry</option>
-                <option value="beads">Beads & jewellery</option>
-                <option value="food">Food & catering</option>
-                <option value="fashion">Fashion & clothing</option>
-                <option value="retail">Retail / shop</option>
-                <option value="services">Services</option>
-                <option value="startup">Startup / idea (not yet started)</option>
-              </select>
-            </>
+            </div>
           )}
-          <label>Email</label>
-          <input
-            name="email"
-            type="text"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="you@example.com"
-          />
-          <label>Password</label>
-          <input
-            name="password"
-            type="text"
-            value={form.password}
-            onChange={handleChange}
-            placeholder="Any password works in demo mode"
-          />
+
+          <div className="field">
+            <label htmlFor="email">Email address</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <div className="pass-wrap">
+              <input
+                id="password"
+                name="password"
+                type={showPass ? 'text' : 'password'}
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              />
+              <button
+                type="button"
+                className="pass-toggle"
+                onClick={() => setShowPass((s) => !s)}
+                aria-label={showPass ? 'Hide password' : 'Show password'}
+              >
+                <Icon name={showPass ? 'eyeOff' : 'eye'} size={18} />
+              </button>
+            </div>
+          </div>
+
           {error && <p className="auth-error">{error}</p>}
-          <button className="auth-submit" type="submit">
-            {mode === 'login' ? 'Log in' : 'Create account'}
+
+          <button className="auth-submit" type="submit" disabled={loading}>
+            {loading ? (
+              <span className="spinner" aria-hidden="true" />
+            ) : (
+              <>
+                {mode === 'login' ? 'Log in' : 'Create account'}
+                <Icon name="arrowRight" size={17} />
+              </>
+            )}
           </button>
         </form>
       </div>

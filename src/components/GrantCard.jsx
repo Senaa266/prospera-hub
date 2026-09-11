@@ -22,7 +22,7 @@ const writeSaved = (id, saved) => {
   }
 }
 
-function GrantCard({ grant, expanded, onExplore, saved, onToggleSaved }) {
+function GrantCard({ grant, saved, onToggleSaved }) {
   const id = grant.id ?? grant.title
   const controlled = saved !== undefined && typeof onToggleSaved === 'function'
   const [localSaved, setLocalSaved] = useState(() => readSaved(id))
@@ -92,29 +92,16 @@ function GrantCard({ grant, expanded, onExplore, saved, onToggleSaved }) {
       <p className="grant-desc">{grant.description}</p>
 
       <div className="grant-foot">
-        {onExplore && (
-          <button className="btn-explore" type="button" onClick={onExplore}>
-            {expanded ? 'Close' : 'Explore'}
-            <Icon name={expanded ? 'x' : 'arrowRight'} size={15} />
-          </button>
-        )}
+        <a
+          className="btn-explore"
+          href={grant.externalUrl || '#'}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Explore
+          <Icon name="arrowRight" size={15} />
+        </a>
       </div>
-
-      {expanded && (
-        <div className="grant-details">
-          <div className="eligibility-block">
-            <span className="eligibility-tag">
-              <Icon name="shield" size={14} />
-              Eligibility
-            </span>
-            <p>{grant.eligibility || 'Contact the provider for full eligibility criteria.'}</p>
-            <a className="btn-official" href={grant.externalUrl || '#'} target="_blank" rel="noreferrer">
-              <Icon name="external" size={15} />
-              Apply on the official page
-            </a>
-          </div>
-        </div>
-      )}
     </article>
   )
 }
