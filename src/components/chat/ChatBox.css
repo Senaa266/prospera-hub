@@ -300,6 +300,12 @@
   color: #8a8a96;
 }
 
+.chat-voice-btn.listening {
+  background: #fde7f2;
+  border-color: #f10178;
+  color: #f10178;
+}
+
 .chat-send-btn {
   display: inline-flex;
   align-items: center;

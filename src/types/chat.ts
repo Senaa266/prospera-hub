@@ -1,4 +1,4 @@
-/** Role of a turn in the Amara chat thread. */
+/** Role of a turn in the Sena chat thread. */
 export type ChatRole = 'user' | 'assistant'
 
 /**

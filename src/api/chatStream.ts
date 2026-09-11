@@ -43,7 +43,7 @@ export type StreamChatOptions = {
 }
 
 /**
- * Streams Amara's reply from POST /api/ai/chat.
+ * Streams Sena's reply from POST /api/ai/chat.
  * The OpenAI key never leaves the server — this client only sends messages.
  */
 export async function streamChatCompletion(
@@ -61,7 +61,7 @@ export async function streamChatCompletion(
   })
 
   if (!response.ok) {
-    let message = 'Amara is unavailable right now. Please try again.'
+    let message = 'Sena is unavailable right now. Please try again.'
     try {
       const data = (await response.json()) as { message?: string }
       if (data.message) message = data.message
@@ -72,7 +72,7 @@ export async function streamChatCompletion(
   }
 
   if (!response.body) {
-    throw new Error('Amara is unavailable right now. Please try again.')
+    throw new Error('Sena is unavailable right now. Please try again.')
   }
 
   const reader = response.body.getReader()

@@ -11,7 +11,7 @@ import { ChatMessage } from './ChatMessage.tsx'
 import { ChatTypingIndicator } from './ChatTypingIndicator.tsx'
 import './ChatBox.css'
 
-const STORAGE_KEY = 'prospera-amara-messages'
+const STORAGE_KEY = 'prospera-sena-messages'
 
 const EXAMPLE_PROMPTS = [
   'Help me price my tailoring business',
@@ -55,7 +55,7 @@ type AuthUser = {
 }
 
 /**
- * Main Amara chat container: history, streaming, empty/error states, and composer.
+ * Main Sena chat container: history, streaming, empty/error states, and composer.
  */
 export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
   const { user, token } = useAuth() as { user: AuthUser | null; token: string | null }
@@ -65,7 +65,9 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
   const [error, setError] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const bootstrappedRef = useRef(false)
+  const sendTextRef = useRef<(text: string, history: ChatMessageModel[]) => Promise<void>>(
+    async () => undefined,
+  )
 
   const userContext = useMemo<UserContext>(() => {
     const context: UserContext = {}
@@ -128,7 +130,7 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
       } catch (caught) {
         if (controller.signal.aborted) return
         const message =
-          caught instanceof Error ? caught.message : 'Amara is unavailable right now. Please try again.'
+          caught instanceof Error ? caught.message : 'Sena is unavailable right now. Please try again.'
         setError(message)
         setMessages((current) => current.filter((item) => item.id !== assistantMessage.id))
       } finally {
@@ -138,14 +140,53 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
     [loading, token, userContext],
   )
 
+  sendTextRef.current = sendText
+
   useEffect(() => {
     const prompt = initialPrompt.trim()
-    if (!prompt || bootstrappedRef.current) return
-    bootstrappedRef.current = true
-    const alreadySent = messages.some((item) => item.role === 'user' && item.content === prompt)
-    if (alreadySent) return
-    void sendText(prompt, messages)
-  }, [initialPrompt, messages, sendText])
+    if (!prompt) return
+
+    const timer = window.setTimeout(() => {
+      const history = loadSessionMessages()
+      const alreadyDone = history.some((item, index) => {
+        const next = history[index + 1]
+        return (
+          item.role === 'user' &&
+          item.content === prompt &&
+          next?.role === 'assistant' &&
+          Boolean(next.content)
+        )
+      })
+      if (alreadyDone) return
+
+      const cleaned = history.filter((item, index, list) => {
+        const next = list[index + 1]
+        const prev = list[index - 1]
+        if (item.role === 'assistant' && !item.content) return false
+        if (
+          item.role === 'user' &&
+          item.content === prompt &&
+          next?.role === 'assistant' &&
+          !next.content
+        ) {
+          return false
+        }
+        if (
+          item.role === 'user' &&
+          item.content === prompt &&
+          prev?.role === 'user' &&
+          prev.content === prompt
+        ) {
+          return false
+        }
+        return true
+      })
+
+      void sendTextRef.current(prompt, cleaned)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [initialPrompt])
 
   useEffect(() => {
     return () => abortRef.current?.abort()
@@ -165,7 +206,7 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
   }
 
   return (
-    <section className="chat-box" aria-label="Chat with Amara">
+    <section className="chat-box" aria-label="Chat with Sena">
       <div
         ref={listRef}
         className="chat-list"
@@ -176,7 +217,7 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
       >
         {messages.length === 0 && !loading && (
           <div className="chat-empty">
-            <p>Ask Amara about strategy, pricing, or your next 90 days.</p>
+            <p>Ask Sena about strategy, pricing, or your next 90 days.</p>
             <ul className="chat-examples">
               {EXAMPLE_PROMPTS.map((prompt) => (
                 <li key={prompt}>

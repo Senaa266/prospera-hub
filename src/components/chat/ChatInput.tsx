@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type KeyboardEvent } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import Icon from '../icons'
 
 type SpeechWindow = Window & {
@@ -26,7 +26,7 @@ type ChatInputProps = {
 export function ChatInput({ value, loading, onChange, onSend }: ChatInputProps) {
   const fieldId = useId()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const listeningRef = useRef(false)
+  const [listening, setListening] = useState(false)
 
   useEffect(() => {
     const el = textareaRef.current
@@ -61,12 +61,12 @@ export function ChatInput({ value, loading, onChange, onSend }: ChatInputProps) 
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript
       if (transcript) onChange(transcript)
-      listeningRef.current = false
+      setListening(false)
     }
     recognition.onend = () => {
-      listeningRef.current = false
+      setListening(false)
     }
-    listeningRef.current = true
+    setListening(true)
     recognition.start()
   }
 
@@ -82,7 +82,8 @@ export function ChatInput({ value, loading, onChange, onSend }: ChatInputProps) 
     >
       <button
         type="button"
-        className="chat-voice-btn"
+        className={`chat-voice-btn${listening ? ' listening' : ''}`}
+        aria-pressed={listening}
         onClick={startVoice}
         disabled={loading}
         aria-label="Voice input"
@@ -91,7 +92,7 @@ export function ChatInput({ value, loading, onChange, onSend }: ChatInputProps) 
       </button>
 
       <label className="sr-only" htmlFor={fieldId}>
-        Message Amara
+        Message Sena
       </label>
       <textarea
         ref={textareaRef}

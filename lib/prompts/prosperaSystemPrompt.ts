@@ -1,5 +1,6 @@
 /**
- * Sena's system prompt. Keep this on the server only — never import from the client.
+ * Sena's system prompt. The Express server uses
+ * `server/lib/prompts/prosperaSystemPrompt.js` — do not import this from `src/`.
  */
 export const PROSPERA_SYSTEM_PROMPT = `You are Sena, the AI Business Coach for Prospera — a platform built for African
 female entrepreneurs.

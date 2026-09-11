@@ -26,7 +26,7 @@ export function buildSystemMessage(userContext) {
 }
 
 /**
- * Offline / unconfigured reply that still honours Amara's scope rules.
+ * Offline / unconfigured reply that still honours Sena's scope rules.
  * @param {string} userText
  * @param {{ financialSnapshot?: object } | undefined} userContext
  * @returns {string}
@@ -57,6 +57,10 @@ export function buildFallbackReply(userText, userContext) {
     !userContext?.financialSnapshot
   ) {
     return `I don't have your logged numbers yet, so I won't guess.\n\nCould you tell me:\n1. Your currency and last 30 days of revenue and expenses, or\n2. Confirm you've saved them on the Finance page so I can read that snapshot?\n\nOnce I have those, I can spot cash-flow patterns and suggest a next step.`
+  }
+
+  if (/susu|stokvel|sacco|group saving/.test(text)) {
+    return `Great question! Let's map this out. First, we'll treat susu / stokvel as a discipline tool, not free money.\n\n1. Agree the contribution, payout order, and what happens if someone misses a week.\n2. Keep every payment visible — Prospera's Susu circles show who has paid.\n3. Don't commit more than your slowest sales week can cover.\n4. Use the payout for stock or a documented goal, not informal lending you can't track.\n\nAre you joining an existing circle or starting one, and what's your weekly contribution target?`
   }
 
   if (/price|pricing|charge|how much should i/.test(text)) {
@@ -105,7 +109,7 @@ async function streamPlainText(res, text) {
 }
 
 /**
- * POST /api/ai/chat — streams Amara's reply via SSE.
+ * POST /api/ai/chat — streams Sena's reply via SSE.
  * Never logs full message contents.
  * @param {import('express').Request} req
  * @param {import('express').Response} res
@@ -155,12 +159,12 @@ export async function chat(req, res) {
   } catch {
     console.error('[ai.chat] provider_error')
     if (res.headersSent) {
-      writeSse(res, { error: 'Amara is unavailable right now. Please try again.' })
+      writeSse(res, { error: 'Sena is unavailable right now. Please try again.' })
       res.end()
       return
     }
     return res.status(500).json({
-      message: 'Amara is unavailable right now. Please try again.',
+      message: 'Sena is unavailable right now. Please try again.',
     })
   }
 }

@@ -18,7 +18,7 @@ function AIChat() {
               <Icon name="sparkles" size={22} />
             </div>
             <div className="ai-header-text">
-              <h1>Amara · AI Business Coach</h1>
+              <h1>Sena · AI Business Coach</h1>
               <p className="ai-header-status">
                 <span className="status-dot" />
                 Online · text and voice

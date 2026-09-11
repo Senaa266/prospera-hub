@@ -9,7 +9,7 @@ type ChatMessageProps = {
 }
 
 /**
- * Renders a single user or Amara bubble. Assistant turns support GFM markdown.
+ * Renders a single user or Sena bubble. Assistant turns support GFM markdown.
  */
 export function ChatMessage({ message }: ChatMessageProps) {
   const [copied, setCopied] = useState(false)
@@ -31,7 +31,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <article
       className={`chat-row ${isUser ? 'chat-row-user' : 'chat-row-assistant'}`}
-      aria-label={isUser ? 'Your message' : "Amara's message"}
+      aria-label={isUser ? 'Your message' : "Sena's message"}
     >
       {!isUser && (
         <div className="chat-avatar" aria-hidden="true">
