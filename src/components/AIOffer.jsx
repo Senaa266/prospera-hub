@@ -1,8 +1,10 @@
-import { Link } from 'react-router-dom'
 import Icon from './icons'
+import { useChat } from '../context/ChatContext'
 import './AIOffer.css'
 
 function AIOffer({ title, text, points = [], cta = 'Chat with AI Coach' }) {
+  const { open } = useChat()
+
   return (
     <section className="ai-offer">
       <span className="ai-offer-glow" aria-hidden="true" />
@@ -26,10 +28,10 @@ function AIOffer({ title, text, points = [], cta = 'Chat with AI Coach' }) {
           </ul>
         )}
       </div>
-      <Link to="/ai-chat" className="ai-offer-cta">
+      <button type="button" className="ai-offer-cta" onClick={() => open()}>
         {cta}
         <Icon name="chevron" size={16} />
-      </Link>
+      </button>
     </section>
   )
 }

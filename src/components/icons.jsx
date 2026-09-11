@@ -1,3 +1,7 @@
+/**
+ * Inline SVG icon used across Prospera.
+ * @param {{ name: string, size?: number } & import('react').SVGProps<SVGSVGElement>} props
+ */
 function Icon({ name, size = 20, ...props }) {
   const common = {
     width: size,
@@ -203,7 +207,7 @@ function Icon({ name, size = 20, ...props }) {
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       )
-    case 'eye':
+case 'eye':
       return (
         <svg {...common}>
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
@@ -224,6 +228,13 @@ function Icon({ name, size = 20, ...props }) {
         <svg {...common}>
           <line x1="5" y1="12" x2="19" y2="12" />
           <polyline points="12 5 19 12 12 19" />
+        </svg>
+      )
+    case 'copy':
+      return (
+        <svg {...common}>
+          <rect x="9" y="9" width="13" height="13" rx="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
         </svg>
       )
     default:
