@@ -1,4 +1,4 @@
-import Navbar from '../components/layout/Navbar'
+import Sidebar from '../components/layout/Sidebar'
 import './Feature.css'
 
 function Suppliers() {
@@ -34,7 +34,7 @@ function Suppliers() {
 
   return (
     <div className="feature-page">
-      <Navbar />
+      <Sidebar />
       <main className="feature-main">
         <div className="feature-header">
           <h1>Peer Supplier</h1>
@@ -50,7 +50,7 @@ function Suppliers() {
         <div className="suppliers-grid">
           {supplierGroups.map((s, i) => (
             <div className="supplier-card" key={i}>
-              <div className="supplier-badge" style={{ background: '#0a7d4f' }}>
+              <div className="supplier-badge" style={{ background: '#f10178' }}>
                 Save {s.discount}
               </div>
               <h3>{s.product}</h3>

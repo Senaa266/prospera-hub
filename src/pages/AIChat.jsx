@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import Navbar from '../components/layout/Navbar'
+import Sidebar from '../components/layout/Sidebar'
+import Icon from '../components/icons'
 import './AIChat.css'
 
 function AIChat() {
   const [messages, setMessages] = useState([
     {
       role: 'ai',
-      text: "Hi! I'm your Prospera AI Coach. I can help you with:\n\n• Business ideas and planning\n• Grant applications\n• Financial advice\n• Supplier negotiations\n• Starting your first business\n\nWhat would you like to talk about?",
+      text: 'Hi, I am your Prospera AI Coach. I can help you with:\n\n\u2022 Business ideas and planning\n\u2022 Grant applications\n\u2022 Financial advice\n\u2022 Supplier negotiations\n\u2022 Starting your first business\n\nWhat would you like to talk about?',
     },
   ])
   const [input, setInput] = useState('')
@@ -28,10 +29,10 @@ function AIChat() {
         ...prev,
         {
           role: 'ai',
-          text: "I understand you're asking about that. This is where the AI integration will respond. For now, we're connecting the chatbot to our AI engine. Your backend team can wire this to OpenAI or Gemini via the /api/ai/chat endpoint.",
+          text: 'That is a great question. The AI engine will respond here — your API member can wire this to OpenAI or Gemini through the /api/ai/chat endpoint.',
         },
       ])
-    }, 1000)
+    }, 900)
   }
 
   const handleKeyDown = (e) => {
@@ -59,23 +60,25 @@ function AIChat() {
 
   return (
     <div className="ai-page">
-      <Navbar />
+      <Sidebar />
       <main className="ai-main">
         <div className="ai-container">
           <div className="ai-header">
-            <span className="ai-icon">🤖</span>
-            <div>
+            <div className="ai-header-icon">
+              <Icon name="sparkles" size={22} />
+            </div>
+            <div className="ai-header-text">
               <h1>AI Business Coach</h1>
-              <p className="ai-status">Online · text and voice</p>
+              <p className="ai-header-status">
+                <span className="status-dot" />
+                Online · text and voice
+              </p>
             </div>
           </div>
 
           <div className="ai-messages">
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`ai-bubble ${m.role === 'user' ? 'user' : 'ai'}`}
-              >
+              <div key={i} className={`ai-bubble ${m.role === 'user' ? 'user' : 'ai'}`}>
                 {m.text.split('\n').map((line, j) => (
                   <span key={j}>
                     {line}
@@ -92,9 +95,9 @@ function AIChat() {
               className={`voice-btn ${isListening ? 'listening' : ''}`}
               onClick={startVoice}
               type="button"
-              title="Voice input"
+              aria-label="Voice input"
             >
-              🎤
+              <Icon name="mic" size={19} />
             </button>
             <textarea
               value={input}
@@ -105,6 +108,7 @@ function AIChat() {
             />
             <button className="send-btn" onClick={sendMessage} type="button">
               Send
+              <Icon name="send" size={15} />
             </button>
           </div>
         </div>

@@ -1,0 +1,132 @@
+.ai-offer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #ffffff;
+  border: 1px solid #e8e8ef;
+  border-radius: 20px;
+  padding: 24px 26px;
+  margin-top: 30px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(16, 8, 12, 0.06);
+}
+
+.ai-offer-glow {
+  position: absolute;
+  top: -80px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(241, 1, 120, 0.14), transparent 70%);
+  pointer-events: none;
+}
+
+.ai-offer-glow::after {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.1), transparent 70%);
+}
+
+.ai-offer-icon {
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: #111114;
+  color: #f10178;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 22px rgba(17, 17, 20, 0.28);
+}
+
+.ai-offer-body {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.ai-offer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #f10178;
+  margin-bottom: 6px;
+}
+
+.ai-offer-body h3 {
+  margin: 0 0 6px;
+  font-size: 1.08rem;
+  color: #111114;
+  letter-spacing: -0.2px;
+}
+
+.ai-offer-body p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #6f6f7c;
+  line-height: 1.55;
+  max-width: 560px;
+}
+
+.ai-offer-points {
+  display: flex;
+  gap: 8px 18px;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+
+.ai-offer-points li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #33333c;
+}
+
+.ai-offer-points svg {
+  color: #f10178;
+}
+
+.ai-offer-cta {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #111114;
+  color: #fff;
+  border-radius: 12px;
+  padding: 13px 20px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  transition: background 0.18s, transform 0.18s;
+}
+
+.ai-offer-cta:hover {
+  background: #f10178;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 900px) {
+  .ai-offer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ai-offer-cta {
+    align-self: stretch;
+    justify-content: center;
+  }
+}

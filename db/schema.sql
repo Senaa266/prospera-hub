@@ -1,5 +1,6 @@
 -- Prospera Hub Schema
--- Database member: design tables for your chosen DB (SQLite / PostgreSQL / MongoDB)
+-- Reference schema. The live DB is managed by `server/db.js` + `npm run seed`
+-- (Node built-in `node:sqlite`), see server/seed.js for the full table list.
 
 -- Users table (all roles)
 CREATE TABLE IF NOT EXISTS users (
@@ -23,16 +24,20 @@ CREATE TABLE IF NOT EXISTS businesses (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Grants (fetched or posted)
+-- Grants (seed data in server/seed.js)
 CREATE TABLE IF NOT EXISTS grants (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   amount TEXT,
+  amount_max REAL,
   description TEXT,
+  eligibility TEXT,
   deadline TEXT,
   type TEXT,
+  region TEXT,
   source TEXT,
   external_url TEXT,
+  image_url TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -40,9 +45,10 @@ CREATE TABLE IF NOT EXISTS grants (
 CREATE TABLE IF NOT EXISTS savings_circles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  amount REAL NOT NULL,
+  amount TEXT,
   period TEXT DEFAULT 'weekly',
   total_members INTEGER,
+  visibility TEXT DEFAULT 'Public',
   created_by INTEGER REFERENCES users(id),
   status TEXT DEFAULT 'active',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP

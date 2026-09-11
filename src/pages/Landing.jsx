@@ -51,20 +51,46 @@ function Landing() {
       </nav>
 
       <section className="hero">
-        <div className="hero-content">
-          <h1>Small businesses. <span className="highlight">Bigger opportunities.</span></h1>
-          <p>
-            Grants you never knew existed. Savings you can trust. AI that builds your
-            business with you. And supplier discounts earned together.
-          </p>
-          <div className="hero-actions">
-            <Link to="/login" className="btn-primary">Start your business</Link>
-            <a href="#features" className="btn-secondary">Explore features</a>
+        <div className="hero-card">
+          <div className="hero-card-bg">
+            <div className="hero-card-overlay" />
           </div>
-          <div className="hero-stats">
-            <div><strong>6+</strong><span>Core features</span></div>
-            <div><strong>0</strong><span>Fraud hiding</span></div>
-            <div><strong>100%</strong><span>Transparency</span></div>
+          <div className="hero-content">
+            <span className="hero-badge">
+              <span className="badge-dot" /> For African entrepreneurs
+            </span>
+            <h1>
+              Small businesses. <span className="highlight">Bigger opportunities.</span>
+            </h1>
+            <p>
+              Grants you never knew existed. Savings you can trust. AI that builds your
+              business with you. And supplier discounts earned together.
+            </p>
+            <div className="hero-actions">
+              <Link to="/login" className="btn-primary">Start your business</Link>
+              <a href="#features" className="btn-secondary btn-secondary-light">
+                Explore features
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="hero-stat-block">
+          <div className="stat-block-head">
+            <span className="stat-block-icon">📊</span>
+            <span>Prospera Hub at a glance</span>
+          </div>
+          <div className="stat-row">
+            <strong>20+</strong>
+            <span>curated grants</span>
+          </div>
+          <div className="stat-row">
+            <strong>100%</strong>
+            <span>payment transparency</span>
+          </div>
+          <div className="stat-row">
+            <strong>31%</strong>
+            <span>avg. supplier savings</span>
           </div>
         </div>
       </section>

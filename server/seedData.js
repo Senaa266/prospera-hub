@@ -1,0 +1,165 @@
+export const GRANTS = [
+  {
+    title: 'MTN SME Support Programme',
+    amount: 'GH₵ 20,000',
+    amount_max: 20000,
+    description: 'Working-capital support for small businesses, with priority for women-led ventures.',
+    eligibility: 'Registered Ghanaian SME. Women-led businesses prioritised. No age limit on founder.',
+    deadline: '2026-10-31',
+    type: 'Small business',
+    region: 'Ghana',
+    source: 'MTN Ghana · Innohub Foundation',
+    external_url: 'https://www.innohub.com.gh/mtn-sme',
+    image_url: null,
+  },
+  {
+    title: 'Absa Young Africa Works Project',
+    amount: 'GH₵ 50,000',
+    amount_max: 50000,
+    description: 'MSME funding programme where 72% of the portfolio goes to women-owned businesses.',
+    eligibility: 'Ghanaian MSME with growth potential. Women-owned businesses strongly prioritised.',
+    deadline: 'Rolling',
+    type: 'Small business',
+    region: 'Ghana',
+    source: 'Absa Ghana · Mastercard Foundation',
+    external_url: 'https://www.absa.com.gh',
+    image_url: null,
+  },
+  {
+    title: 'Tony Elumelu Entrepreneurship Programme',
+    amount: 'US$ 5,000',
+    amount_max: 56000,
+    description:
+      'Non-refundable seed capital plus business mentorship for African entrepreneurs. Highest female participation of any programme at this scale.',
+    eligibility:
+      'African entrepreneur, 21+. Business idea or nascent venture. Apply through the TEFConnect portal.',
+    deadline: '2027-01-15',
+    type: 'All sectors',
+    region: 'Pan-Africa',
+    source: 'Tony Elumelu Foundation',
+    external_url: 'https://www.tefconnect.com',
+    image_url: null,
+  },
+  {
+    title: 'GEA YouStart Programme',
+    amount: 'GH₵ 5,000 – GH₵ 50,000',
+    amount_max: 50000,
+    description:
+      'Government-backed starter-package programme for young Ghanaian entrepreneurs, targeting at least 50% women.',
+    eligibility:
+      'Ghanaian aged 18–40 with a viable business idea. Government registration required. Phase windows reopen regularly.',
+    deadline: '2026-12-15',
+    type: 'Youth',
+    region: 'Ghana',
+    source: 'Ghana Enterprises Agency',
+    external_url: 'https://gea.gov.gh',
+    image_url: null,
+  },
+  {
+    title: 'Mastercard Foundation BizBox Programme',
+    amount: 'Startup kits + training',
+    amount_max: 20000,
+    description:
+      'In-kind support: business startup kits, training and market access for agri-adjacent businesses via GEA.',
+    eligibility:
+      'Ghanaian agri-business or agri-adjacent venture. Strong fit for young women-led businesses in agriculture.',
+    deadline: '2027-04-30',
+    type: 'Agri-business',
+    region: 'Ghana',
+    source: 'Mastercard Foundation + GEA',
+    external_url: 'https://mastercardfdn.org',
+    image_url: null,
+  },
+  {
+    title: 'AFAWA – African Development Bank',
+    amount: 'Financing programme',
+    amount_max: 250000,
+    description:
+      "Africa's flagship initiative closing the gender financing gap — invests through partner banks that fund women-led businesses.",
+    eligibility:
+      'Women-led or women-owned business. Funding flows through AFAWA partner financial institutions.',
+    deadline: 'Rolling',
+    type: 'Women-led',
+    region: 'Pan-Africa',
+    source: 'African Development Bank',
+    external_url: 'https://afawa.afdb.org',
+    image_url: null,
+  },
+  {
+    title: 'UN Women Empowerment Grant',
+    amount: 'Programme-based',
+    amount_max: 40000,
+    description:
+      'Training, mentoring and financial-management skills plus funding for up to 10,000 female entrepreneurs.',
+    eligibility:
+      'Woman-led venture. Runs through UN Women Africa regional calls for applications.',
+    deadline: '2026-11-30',
+    type: 'Women-led',
+    region: 'Pan-Africa',
+    source: 'UN Women · We-Fi',
+    external_url: 'https://africa.unwomen.org',
+    image_url: null,
+  },
+  {
+    title: 'Google for Startups Africa',
+    amount: 'US$ 10,000 – 50,000',
+    amount_max: 50000,
+    description: 'Funding and hands-on support for digital-first startups solving local problems in Africa.',
+    eligibility:
+      'Digital-first product, HQ or meaningful operations in Africa, pre-seed to Series A.',
+    deadline: '2026-12-31',
+    type: 'Tech / Digital',
+    region: 'Pan-Africa',
+    source: 'Google',
+    external_url: 'https://startup.google.com',
+    image_url: null,
+  },
+  {
+    title: 'Orange Corners Incubator',
+    amount: 'US$ 5,000 + incubation',
+    amount_max: 5000,
+    description: 'Agri-business incubation plus market-access programmes across West Africa.',
+    eligibility: 'Agri-value-chain business, registered, ready for incubation in West Africa.',
+    deadline: '2026-12-20',
+    type: 'Agri-business',
+    region: 'West Africa',
+    source: 'Orange Corners',
+    external_url: 'https://www.orangecorners.com',
+    image_url: null,
+  },
+  {
+    title: 'Meta Business Boost Africa',
+    amount: 'US$ 250 + training',
+    amount_max: 250,
+    description: 'Small ad-budget grants plus digital-skills training for growing SMBs on Meta platforms.',
+    eligibility: 'SMB with an active Meta business account, any sector, Africa-based.',
+    deadline: 'Rolling',
+    type: 'Digital',
+    region: 'Pan-Africa',
+    source: 'Meta',
+    external_url: 'https://about.meta.com',
+    image_url: null,
+  },
+]
+
+export const SAVING_CIRCLES = [
+  { name: 'Ayah Susu Circle', amount: 'GH₵ 200 / week', period: 'weekly', total_members: 12, visibility: 'Private', status: 'active' },
+  { name: 'Trader Women Group', amount: 'GH₵ 100 / week', period: 'weekly', total_members: 20, visibility: 'Public', status: 'active' },
+  { name: 'Market Queens Co-op', amount: 'GH₵ 250 / week', period: 'bi-weekly', total_members: 10, visibility: 'Public', status: 'active' },
+  { name: 'Pearl & Gold Traders', amount: 'GH₵ 150 / week', period: 'weekly', total_members: 15, visibility: 'Public', status: 'active' },
+]
+
+export const SUPPLIERS = [
+  { product: 'Beads & accessories', supplier: 'Kantamanto Wholesale', solo_price: 35, group_price: 24, min_orders: 5, status: 'open' },
+  { product: 'Fabric (Ankara / Kente)', supplier: 'Opera Market Suppliers', solo_price: 65, group_price: 48, min_orders: 8, status: 'open' },
+  { product: 'Packaging materials', supplier: 'ChinaAgent-GH', solo_price: 12, group_price: 8, min_orders: 20, status: 'open' },
+]
+
+export const TRANSACTIONS = [
+  { user_id: null, type: 'income', description: 'Adire fabric sales (Kantanka orders)', amount: 2400, date: '2026-09-08' },
+  { user_id: null, type: 'expense', description: 'Raw material restock: beads & thread', amount: 780, date: '2026-09-05' },
+  { user_id: null, type: 'income', description: 'Custom bag commission', amount: 950, date: '2026-09-02' },
+  { user_id: null, type: 'expense', description: 'Shop rent (September)', amount: 500, date: '2026-09-01' },
+  { user_id: null, type: 'income', description: 'Weekend market stall sales', amount: 1320, date: '2026-08-29' },
+  { user_id: null, type: 'expense', description: 'Bolt deliveries (wholesale drops)', amount: 210, date: '2026-08-27' },
+]

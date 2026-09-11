@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import Navbar from '../components/layout/Navbar'
+import Sidebar from '../components/layout/Sidebar'
+import Icon from '../components/icons'
 import './Feature.css'
 
 function Finance() {
@@ -20,7 +21,7 @@ function Finance() {
 
   return (
     <div className="feature-page">
-      <Navbar />
+      <Sidebar />
       <main className="feature-main">
         <div className="feature-header">
           <h1>Financial Tracking</h1>
@@ -44,7 +45,10 @@ function Finance() {
 
         <div className="finance-actions">
           <button className="btn-primary-dark" type="button">+ Add transaction</button>
-          <button className="btn-ai-link" type="button">🤖 AI financial report</button>
+          <button className="btn-ai-link" type="button">
+            <Icon name="sparkles" size={16} />
+            AI financial report
+          </button>
         </div>
 
         <table className="finance-table">
@@ -66,7 +70,7 @@ function Finance() {
                   </span>
                 </td>
                 <td>{e.desc}</td>
-                <td className={e.type === 'income' ? 'amount-green' : 'amount-red'}>
+                <td className={e.type === 'income' ? 'amount-income' : 'amount-red'}>
                   {e.type === 'income' ? '+' : '-'}GH₵ {e.amount}
                 </td>
               </tr>

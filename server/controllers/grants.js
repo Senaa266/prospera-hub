@@ -1,27 +1,38 @@
-export function listGrants(req, res) {
-  const grants = [
-    {
-      id: 1,
-      title: 'Ghana Startup Grant',
-      amount: 'GHS 5,000 - GHS 25,000',
-      deadline: '2026-09-30',
-      type: 'Tech / Innovation',
-    },
-    {
-      id: 2,
-      title: 'AfDB Youth Entrepreneurship',
-      amount: 'GHS 10,000 - GHS 100,000',
-      deadline: '2026-11-15',
-      type: 'All sectors',
-    },
-    {
-      id: 3,
-      title: 'Google for Startups Africa',
-      amount: '$10,000 - $50,000',
-      deadline: '2026-12-31',
-      type: 'Tech / Digital',
-    },
-  ]
+import { db } from '../db.js'
 
-  res.json({ grants })
+function faviconFor(url) {
+  if (!url) return null
+  try {
+    return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=128`
+  } catch {
+    return null
+  }
+}
+
+export function listGrants(req, res) {
+  try {
+    const rows = db
+      .prepare('SELECT * FROM grants ORDER BY (deadline = ?) ASC, date(deadline) ASC, id ASC')
+      .all('Rolling')
+
+    const grants = rows.map((g) => ({
+      id: g.id,
+      title: g.title,
+      amount: g.amount,
+      amountMax: g.amount_max,
+      description: g.description,
+      eligibility: g.eligibility,
+      deadline: g.deadline,
+      type: g.type,
+      region: g.region,
+      source: g.source,
+      externalUrl: g.external_url,
+      imageUrl: g.image_url,
+      image: g.image_url || faviconFor(g.external_url),
+    }))
+
+    res.json({ grants })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
 }

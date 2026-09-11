@@ -15,19 +15,15 @@ function Login() {
     setError('')
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     setError('')
-    try {
-      if (mode === 'login') {
-        await login({ email: form.email, password: form.password })
-      } else {
-        await register(form)
-      }
-      navigate('/dashboard')
-    } catch (err) {
-      setError(err.message || 'Something went wrong. Try again.')
+    if (mode === 'login') {
+      login({ email: form.email, password: form.password })
+    } else {
+      register(form)
     }
+    navigate('/dashboard')
   }
 
   return (
@@ -66,11 +62,10 @@ function Login() {
                 value={form.name}
                 onChange={handleChange}
                 placeholder="Your name"
-                required
               />
-              <label>Business type</label>
+              <label>Industry</label>
               <select name="businessType" value={form.businessType} onChange={handleChange}>
-                <option value="">Select your business type</option>
+                <option value="">Select your industry</option>
                 <option value="beads">Beads & jewellery</option>
                 <option value="food">Food & catering</option>
                 <option value="fashion">Fashion & clothing</option>
@@ -83,21 +78,18 @@ function Login() {
           <label>Email</label>
           <input
             name="email"
-            type="email"
+            type="text"
             value={form.email}
             onChange={handleChange}
             placeholder="you@example.com"
-            required
           />
           <label>Password</label>
           <input
             name="password"
-            type="password"
+            type="text"
             value={form.password}
             onChange={handleChange}
-            placeholder="Min 6 characters"
-            minLength="6"
-            required
+            placeholder="Any password works in demo mode"
           />
           {error && <p className="auth-error">{error}</p>}
           <button className="auth-submit" type="submit">
