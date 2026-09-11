@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useChat } from '../context/ChatContext'
 import Sidebar from '../components/layout/Sidebar'
 import Icon from '../components/icons'
 import './Dashboard.css'
@@ -51,6 +52,7 @@ const SUGGESTIONS = ['How do I start my bead business?', 'Which grants fit my bu
 
 function Dashboard() {
   const { user, logout } = useAuth()
+  const { open } = useChat()
   const navigate = useNavigate()
   const [bannerIndex, setBannerIndex] = useState(0)
   const [chatInput, setChatInput] = useState('')
@@ -71,7 +73,8 @@ function Dashboard() {
 
   const handleChatSubmit = (e) => {
     e.preventDefault()
-    navigate('/ai-chat')
+    open(chatInput.trim())
+    setChatInput('')
   }
 
   const banner = GRANTS[bannerIndex]
@@ -172,7 +175,11 @@ function Dashboard() {
 
           <div className="ai-suggestions">
             {SUGGESTIONS.map((s) => (
-              <button key={s} type="button" onClick={() => navigate('/ai-chat')}>
+              <button
+                key={s}
+                type="button"
+                onClick={() => open(s)}
+              >
                 {s}
               </button>
             ))}

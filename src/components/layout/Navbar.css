@@ -50,10 +50,17 @@
   color: #fff;
 }
 
-.nav-app-links a.nav-ai {
+.nav-app-links a.nav-ai,
+.nav-app-links button.nav-ai {
   background: #fff3e0;
   color: #b45309;
   font-weight: 600;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.92rem;
 }
 
 .nav-app-user {
