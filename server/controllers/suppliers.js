@@ -1,35 +1,25 @@
-const supplierGroups = [
-  {
-    id: 1,
-    product: 'Beads & accessories',
-    supplier: 'Kantamanto Wholesale',
-    soloPrice: 35,
-    groupPrice: 24,
-    minOrders: 5,
-    currentOrders: 3,
-  },
-  {
-    id: 2,
-    product: 'Fabric (Ankara / Kente)',
-    supplier: 'Opera Market Suppliers',
-    soloPrice: 65,
-    groupPrice: 48,
-    minOrders: 8,
-    currentOrders: 5,
-  },
-  {
-    id: 3,
-    product: 'Packaging materials',
-    supplier: 'ChinaAgent-GH',
-    soloPrice: 12,
-    groupPrice: 8,
-    minOrders: 20,
-    currentOrders: 14,
-  },
-]
+import { db } from '../db.js'
+
+const rowToGroup = (g, orders) => ({
+  id: g.id,
+  product: g.product,
+  supplier: g.supplier,
+  soloPrice: g.solo_price,
+  groupPrice: g.group_price,
+  minOrders: g.min_orders,
+  currentOrders: Math.min(g.min_orders, orders),
+})
+
+function ordersCount(groupId) {
+  return db.prepare('SELECT COUNT(*) AS n FROM supplier_orders WHERE group_id = ?').get(groupId).n
+}
 
 export function listSupplierGroups(req, res) {
-  res.json({ supplierGroups })
+  const groups = db
+    .prepare('SELECT * FROM supplier_groups ORDER BY id')
+    .all()
+    .map((g) => rowToGroup(g, ordersCount(g.id)))
+  res.json({ supplierGroups: groups })
 }
 
 export function createSupplierGroup(req, res) {
@@ -39,27 +29,34 @@ export function createSupplierGroup(req, res) {
     return res.status(400).json({ message: 'Product, prices and min orders are required' })
   }
 
-  const group = {
-    id: supplierGroups.length + 1,
-    product,
-    supplier,
-    soloPrice,
-    groupPrice,
-    minOrders,
-    currentOrders: 1,
-  }
-  supplierGroups.push(group)
-  res.status(201).json({ group })
+  const info = db
+    .prepare(
+      `INSERT INTO supplier_groups (product, supplier, solo_price, group_price, min_orders)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+    .run(
+      product,
+      supplier || 'Group supplier',
+      Number(soloPrice),
+      Number(groupPrice),
+      Math.max(Number(minOrders), 1)
+    )
+
+  const group = db.prepare('SELECT * FROM supplier_groups WHERE id = ?').get(info.lastInsertRowid)
+  res.status(201).json({ group: rowToGroup(group, 0) })
 }
 
 export function joinSupplierGroup(req, res) {
-  const { groupId } = req.body
-  const group = supplierGroups.find((g) => g.id === Number(groupId))
+  const { groupId, qty } = req.body
+  const group = db.prepare('SELECT * FROM supplier_groups WHERE id = ?').get(Number(groupId))
 
   if (!group) {
     return res.status(404).json({ message: 'Supplier group not found' })
   }
 
-  group.currentOrders = Math.min(group.currentOrders + 1, group.minOrders)
-  res.json({ group })
+  db.prepare(
+    'INSERT OR IGNORE INTO supplier_orders (group_id, user_id, qty) VALUES (?, ?, ?)'
+  ).run(group.id, req.user.id, Math.max(Number(qty) || 1, 1))
+
+  res.json({ group: rowToGroup(group, ordersCount(group.id)) })
 }

@@ -31,15 +31,20 @@ export const grants = {
 export const savings = {
   list: (token) => client('/savings', { token }),
   create: (data, token) => client('/savings', { method: 'POST', body: data, token }),
+  join: (circleId, token) => client('/savings/join', { method: 'POST', body: { circleId }, token }),
 }
 
 export const suppliers = {
   list: (token) => client('/suppliers', { token }),
-  createOrder: (data, token) => client('/supplier-orders', { method: 'POST', body: data, token }),
+  createGroup: (data, token) => client('/suppliers', { method: 'POST', body: data, token }),
+  join: (groupId, qty, token) =>
+    client('/suppliers/join', { method: 'POST', body: { groupId, qty }, token }),
 }
 
 export const finance = {
   list: (token) => client('/finance', { token }),
+  add: (data, token) => client('/finance', { method: 'POST', body: data, token }),
+  report: (token) => client('/finance/report', { token }),
 }
 
 export const ai = {

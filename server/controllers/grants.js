@@ -1,4 +1,5 @@
 import { db } from '../db.js'
+import { refreshGrantsIfStale } from '../scraper.js'
 
 function faviconFor(url) {
   if (!url) return null
@@ -9,11 +10,15 @@ function faviconFor(url) {
   }
 }
 
-export function listGrants(req, res) {
+export async function listGrants(req, res) {
   try {
+    await refreshGrantsIfStale()
+
     const rows = db
       .prepare('SELECT * FROM grants ORDER BY (deadline = ?) ASC, date(deadline) ASC, id ASC')
       .all('Rolling')
+
+    const live = rows.some((g) => g.fetched_at)
 
     const grants = rows.map((g) => ({
       id: g.id,
@@ -31,7 +36,7 @@ export function listGrants(req, res) {
       image: g.image_url || faviconFor(g.external_url),
     }))
 
-    res.json({ grants })
+    res.json({ grants, live })
   } catch (err) {
     res.status(500).json({ message: err.message })
   }

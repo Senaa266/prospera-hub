@@ -37,7 +37,13 @@ CREATE TABLE IF NOT EXISTS grants (
   source TEXT,
   external_url TEXT,
   image_url TEXT,
+  fetched_at TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS meta (
+  key TEXT PRIMARY KEY,
+  value TEXT
 );
 
 CREATE TABLE IF NOT EXISTS savings_circles (
@@ -51,6 +57,14 @@ CREATE TABLE IF NOT EXISTS savings_circles (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS savings_members (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  circle_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(circle_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS supplier_groups (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   product TEXT NOT NULL,
@@ -60,6 +74,15 @@ CREATE TABLE IF NOT EXISTS supplier_groups (
   min_orders INTEGER,
   status TEXT DEFAULT 'open',
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS supplier_orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  qty INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(group_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
@@ -74,6 +97,12 @@ CREATE TABLE IF NOT EXISTS transactions (
 `
 
 db.exec(schema)
+
+try {
+  db.exec('ALTER TABLE grants ADD COLUMN fetched_at TEXT')
+} catch {
+  /* column already exists on newer databases */
+}
 
 function seedIfEmpty() {
   const count = (table) => db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n
@@ -105,3 +134,20 @@ function seedIfEmpty() {
 }
 
 seedIfEmpty()
+
+function seedDemoSupplierOrders() {
+  const seeded = db.prepare(`SELECT COUNT(*) AS n FROM meta WHERE key = 'supplier_orders_seeded'`).get().n
+  if (seeded > 0) return
+  const groups = db.prepare('SELECT id, min_orders FROM supplier_groups ORDER BY id').all()
+  if (groups.length === 0) return
+  const ins = db.prepare(
+    'INSERT OR IGNORE INTO supplier_orders (group_id, user_id, qty) VALUES (?, ?, 1)'
+  )
+  for (const g of groups) {
+    const base = Math.min(g.min_orders - 1, Math.floor(g.min_orders * 0.7))
+    for (let i = 1; i <= base; i += 1) ins.run(g.id, -i)
+  }
+  db.prepare(`INSERT INTO meta (key, value) VALUES ('supplier_orders_seeded', '1')`).run()
+}
+
+seedDemoSupplierOrders()

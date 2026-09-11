@@ -1,8 +1,16 @@
-const transactions = []
+import { db } from '../db.js'
+
+const toRow = (t) => ({ id: t.id, type: t.type, desc: t.description, amount: t.amount, date: t.date })
 
 export function listTransactions(req, res) {
-  const userTransactions = transactions.filter((t) => t.userId === req.user.id)
-  res.json({ transactions: userTransactions })
+  const rows = db
+    .prepare(
+      `SELECT * FROM transactions
+       WHERE user_id = ? OR user_id IS NULL
+       ORDER BY date DESC, id DESC`
+    )
+    .all(req.user.id)
+  res.json({ transactions: rows.map(toRow) })
 }
 
 export function addTransaction(req, res) {
@@ -15,33 +23,37 @@ export function addTransaction(req, res) {
     return res.status(400).json({ message: 'Type must be income or expense' })
   }
 
-  const transaction = {
-    id: transactions.length + 1,
-    userId: req.user.id,
-    type,
-    desc,
-    amount: Number(amount),
-    date: date || new Date().toISOString().split('T')[0],
-  }
-  transactions.push(transaction)
-  res.status(201).json({ transaction })
+  const info = db
+    .prepare(
+      `INSERT INTO transactions (user_id, type, description, amount, date)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+    .run(
+      req.user.id,
+      type,
+      String(desc),
+      Number(amount),
+      date || new Date().toISOString().split('T')[0]
+    )
+
+  const transaction = db.prepare('SELECT * FROM transactions WHERE id = ?').get(info.lastInsertRowid)
+  res.status(201).json({ transaction: toRow(transaction) })
 }
 
 export function getReport(req, res) {
-  const userTransactions = transactions.filter((t) => t.userId === req.user.id)
-  const income = userTransactions
-    .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0)
-  const expense = userTransactions
-    .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0)
+  const rows = db
+    .prepare('SELECT type, amount FROM transactions WHERE user_id = ? OR user_id IS NULL')
+    .all(req.user.id)
+
+  const income = rows.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
+  const expense = rows.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
 
   res.json({
     report: {
       totalIncome: income,
       totalExpense: expense,
       profit: income - expense,
-      transactionCount: userTransactions.length,
+      transactionCount: rows.length,
     },
   })
 }

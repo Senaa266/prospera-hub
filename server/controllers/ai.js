@@ -1,8 +1,19 @@
+import { aiConfigured, chatReply } from '../ai.js'
+
 export async function chat(req, res) {
   const { message } = req.body
 
   if (!message) {
     return res.status(400).json({ message: 'Message is required' })
+  }
+
+  if (aiConfigured()) {
+    try {
+      const reply = await chatReply(message)
+      return res.json({ reply })
+    } catch (err) {
+      console.error('[ai] live chat failed, using canned fallback:', err.message)
+    }
   }
 
   const text = message.toLowerCase()
