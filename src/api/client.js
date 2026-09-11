@@ -36,9 +36,19 @@ export const savings = {
 
 export const suppliers = {
   list: (token) => client('/suppliers', { token }),
+  detail: (id, token) => client(`/suppliers/${id}`, { token }),
   createGroup: (data, token) => client('/suppliers', { method: 'POST', body: data, token }),
-  join: (groupId, qty, token) =>
-    client('/suppliers/join', { method: 'POST', body: { groupId, qty }, token }),
+  join: (groupId, qty, note, token) =>
+    client('/suppliers/join', { method: 'POST', body: { groupId, qty, note }, token }),
+  approve: (groupId, orderId, token) =>
+    client(`/suppliers/${groupId}/approve`, { method: 'POST', body: { orderId }, token }),
+  reject: (groupId, orderId, token) =>
+    client(`/suppliers/${groupId}/reject`, { method: 'POST', body: { orderId }, token }),
+  updateShare: (groupId, qty, token) =>
+    client(`/suppliers/${groupId}/share`, { method: 'POST', body: { qty }, token }),
+  messages: (groupId, token) => client(`/suppliers/${groupId}/messages`, { token }),
+  sendMessage: (groupId, text, channel, token) =>
+    client(`/suppliers/${groupId}/messages`, { method: 'POST', body: { text, channel }, token }),
 }
 
 export const finance = {
