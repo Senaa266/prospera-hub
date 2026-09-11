@@ -1,4 +1,4 @@
-import type { ChatRequest, ChatStreamEvent } from '../types/chat.ts'
+import type { ChatProvider, ChatRequest, ChatStreamEvent, ChatTrackerPayload } from '../types/chat.ts'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -40,11 +40,13 @@ export type StreamChatOptions = {
   token: string
   signal?: AbortSignal
   onDelta: (text: string) => void
+  onProvider?: (provider: ChatProvider) => void
+  onTracker?: (tracker: ChatTrackerPayload) => void
 }
 
 /**
  * Streams Sena's reply from POST /api/ai/chat.
- * The OpenAI key never leaves the server — this client only sends messages.
+ * Provider keys stay on the server — this client only sends messages.
  */
 export async function streamChatCompletion(
   payload: ChatRequest,
@@ -88,6 +90,8 @@ export async function streamChatCompletion(
 
     for (const event of decoded.events) {
       if (event.error) throw new Error(event.error)
+      if (event.provider) options.onProvider?.(event.provider)
+      if (event.tracker) options.onTracker?.(event.tracker)
       if (event.content) options.onDelta(event.content)
     }
   }

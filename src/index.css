@@ -1,24 +1,79 @@
-* {
-  box-sizing: border-box;
+@import 'tailwindcss';
+
+@theme {
+  --color-prospera: #f10178;
+  --color-prospera-dark: #be004c;
+  --color-prospera-soft: #fde7f2;
+  --color-brand-indigo: #6366f1;
+  --color-brand-violet: #7c3aed;
+  --color-ink: #16161c;
+  --color-ink-strong: #111114;
+  --color-muted: #6f6f7c;
+  --color-line: #ececf2;
+  --color-canvas: #f6f6fa;
+  --color-card: #ffffff;
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --shadow-card: 0 4px 14px rgb(16 8 12 / 0.04);
+  --shadow-card-hover: 0 12px 28px rgb(20 8 14 / 0.1);
+  --radius-card: 1rem;
 }
 
-body {
-  margin: 0;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  background: #f6f6fa;
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  button,
+  textarea,
+  input,
+  select {
+    font-family: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-indigo);
+    outline-offset: 2px;
+  }
 }
 
-#root {
-  min-height: 100vh;
+@layer utilities {
+  .animate-page-in {
+    animation: page-in 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .text-gradient {
+    background: linear-gradient(120deg, var(--color-prospera), var(--color-brand-indigo));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
-button {
-  font-family: inherit;
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-textarea,
-input,
-select {
-  font-family: inherit;
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }

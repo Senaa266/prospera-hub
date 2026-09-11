@@ -5,7 +5,11 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 
-loadEnv({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') })
+const serverDir = path.dirname(fileURLToPath(import.meta.url))
+const repoRoot = path.join(serverDir, '..')
+loadEnv({ path: path.join(serverDir, '.env') })
+loadEnv({ path: path.join(repoRoot, '.env') })
+loadEnv({ path: path.join(repoRoot, '.env.local') })
 
 import authRoutes from './routes/auth.js'
 import grantRoutes from './routes/grants.js'

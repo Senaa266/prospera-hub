@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import Sidebar from '../components/layout/Sidebar'
 import Icon from '../components/icons'
 import AIOffer from '../components/AIOffer'
+import ContributePaymentModal from '../components/savings/ContributePaymentModal'
+import { PageShell } from '../components/ui/PageShell'
 import { GROUPS, fmt, getJoined, setJoined } from '../data/savings'
 import './Feature.css'
 
@@ -11,12 +12,11 @@ function SavingsDetail() {
   const group = GROUPS.find((g) => g.id === id)
   const [joined, setJoinedState] = useState(getJoined().includes(id))
   const [contributed, setContributed] = useState(0)
+  const [payOpen, setPayOpen] = useState(false)
 
   if (!group) {
     return (
-      <div className="feature-page">
-        <Sidebar />
-        <main className="feature-main">
+      <PageShell>
           <Link to="/savings" className="detail-back">
             <Icon name="chevron" size={16} />
             Back to savings
@@ -27,8 +27,7 @@ function SavingsDetail() {
               Browse circles
             </Link>
           </div>
-        </main>
-      </div>
+      </PageShell>
     )
   }
 
@@ -50,9 +49,7 @@ function SavingsDetail() {
   ]
 
   return (
-    <div className="feature-page">
-      <Sidebar />
-      <main className="feature-main">
+    <PageShell>
         <Link to="/savings" className="detail-back">
           <Icon name="chevron" size={16} />
           Back to savings
@@ -154,10 +151,10 @@ function SavingsDetail() {
                     <button
                       type="button"
                       className="btn-join detail-contribute"
-                      onClick={() => setContributed((c) => c + 200)}
+                      onClick={() => setPayOpen(true)}
                     >
                       <Icon name="wallet" size={15} />
-                      Contribute GH₵ 200
+                      Contribute GH₵ {group.weekly}
                     </button>
                   </>
                 ) : (
@@ -234,8 +231,15 @@ function SavingsDetail() {
           text="Ask your AI coach to explain the payout rotation, estimate your full cycle, or flag a group that's falling behind."
           points={['Rotation explained', 'Cycle estimate', 'Health check']}
         />
-      </main>
-    </div>
+
+        <ContributePaymentModal
+          open={payOpen}
+          circleName={group.name}
+          defaultAmount={group.weekly}
+          onClose={() => setPayOpen(false)}
+          onSuccess={(amount) => setContributed((current) => current + amount)}
+        />
+      </PageShell>
   )
 }
 

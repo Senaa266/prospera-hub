@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTrackers } from '../../context/TrackersContext'
 import { streamChatCompletion } from '../../api/chatStream.ts'
+import { buildTrackerEvent } from '../../lib/extractTracker.js'
 import {
   createChatMessage,
   type ChatMessage as ChatMessageModel,
+  type ChatProvider,
   type UserContext,
 } from '../../types/chat.ts'
 import { ChatInput } from './ChatInput.tsx'
@@ -59,10 +63,13 @@ type AuthUser = {
  */
 export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
   const { user, token } = useAuth() as { user: AuthUser | null; token: string | null }
+  const { addTracker } = useTrackers()
   const [messages, setMessages] = useState<ChatMessageModel[]>(loadSessionMessages)
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [createdTracker, setCreatedTracker] = useState<{ id: string; title: string } | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const sendTextRef = useRef<(text: string, history: ChatMessageModel[]) => Promise<void>>(
@@ -97,6 +104,11 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
       abortRef.current?.abort()
       const controller = new AbortController()
       abortRef.current = controller
+      let timedOut = false
+      const timeoutId = window.setTimeout(() => {
+        timedOut = true
+        controller.abort()
+      }, 45_000)
 
       const userMessage = createChatMessage('user', trimmed)
       const assistantMessage = createChatMessage('assistant', '')
@@ -104,9 +116,13 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
 
       setDraft('')
       setError(null)
+      setNotice(null)
+      setCreatedTracker(null)
       setLoading(true)
       setMessages([...nextHistory, assistantMessage])
 
+      let streamed = ''
+      let savedTracker = false
       try {
         await streamChatCompletion(
           {
@@ -116,7 +132,22 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
           {
             token: token || 'demo-token',
             signal: controller.signal,
+            onProvider: (provider: ChatProvider) => {
+              if (provider === 'local') {
+                setNotice(
+                  'Live Gemini is not connected yet. Sena is answering from your words on the server. Add GEMINI_API_KEY to server/.env for the full model.',
+                )
+              }
+            },
+            onTracker: (payload) => {
+              const tracker = addTracker(payload)
+              if (tracker) {
+                savedTracker = true
+                setCreatedTracker({ id: tracker.id, title: tracker.title })
+              }
+            },
             onDelta: (delta) => {
+              streamed += delta
               setMessages((current) =>
                 current.map((item) =>
                   item.id === assistantMessage.id
@@ -127,17 +158,28 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
             },
           },
         )
+        if (!savedTracker) {
+          const fallback = buildTrackerEvent(trimmed, streamed)
+          if (fallback) {
+            const tracker = addTracker(fallback)
+            if (tracker) setCreatedTracker({ id: tracker.id, title: tracker.title })
+          }
+        }
       } catch (caught) {
-        if (controller.signal.aborted) return
-        const message =
-          caught instanceof Error ? caught.message : 'Sena is unavailable right now. Please try again.'
+        if (controller.signal.aborted && !timedOut) return
+        const message = timedOut
+          ? 'Sena timed out. Please try again.'
+          : caught instanceof Error
+            ? caught.message
+            : 'Sena is unavailable right now. Please try again.'
         setError(message)
         setMessages((current) => current.filter((item) => item.id !== assistantMessage.id))
       } finally {
-        if (!controller.signal.aborted) setLoading(false)
+        window.clearTimeout(timeoutId)
+        if (!controller.signal.aborted || timedOut) setLoading(false)
       }
     },
-    [loading, token, userContext],
+    [loading, token, userContext, addTracker],
   )
 
   sendTextRef.current = sendText
@@ -258,6 +300,21 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
           <button type="button" className="chat-retry-btn" onClick={handleRetry}>
             Retry
           </button>
+        </div>
+      )}
+
+      {notice && !error && (
+        <div className="chat-notice" role="status">
+          <p>{notice}</p>
+        </div>
+      )}
+
+      {createdTracker && !error && (
+        <div className="chat-tracker-banner" role="status">
+          <p>
+            Sena saved <strong>{createdTracker.title}</strong> as a live tracker.
+          </p>
+          <Link to={`/trackers/${createdTracker.id}`}>Open tracker</Link>
         </div>
       )}
 

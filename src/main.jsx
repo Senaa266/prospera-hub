@@ -5,14 +5,17 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 import { ChatProvider } from './context/ChatContext'
+import { TrackersProvider } from './context/TrackersContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <ChatProvider>
-          <App />
-        </ChatProvider>
+        <TrackersProvider>
+          <ChatProvider>
+            <App />
+          </ChatProvider>
+        </TrackersProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
