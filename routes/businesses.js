@@ -2,7 +2,16 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-router.get('/', async (req, res) => {
+// Import authentication and validation middleware
+const authenticate = require('../middleware/auth.middleware');
+const { validateBusiness } = require('../middleware/validate.middleware');
+console.log("authenticate:", typeof authenticate);
+console.log("validateBusiness:", typeof validateBusiness);
+
+// ==========================================
+// GET /businesses (Fetch All Businesses)
+// ==========================================
+router.get('/', authenticate, async (req, res, next) => {
   try {
     const sql = `
       SELECT 
@@ -17,37 +26,35 @@ router.get('/', async (req, res) => {
         b.readiness_score
       FROM businesses b
       JOIN users u ON b.user_id = u.user_id
+      ORDER BY b.business_id DESC
     `;
     const [rows] = await db.query(sql);
-    res.status(200).json({ success: true, data: rows });
+
+    res.status(200).json({ 
+      success: true, 
+      count: rows.length,
+      data: rows 
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.post('/', async (req, res) => {
-  const { user_id, business_name, industry_sector, is_registered, monthly_avg_revenue, readiness_score } = req.body;
-
-  if (!user_id || !business_name || !industry_sector) {
-    return res.status(400).json({
-      success: false,
-      message: 'user_id, business_name, and industry_sector are required fields.'
-    });
-  }
+// ==========================================
+// POST /businesses (Create Business)
+// ==========================================
+router.post('/', authenticate, validateBusiness, async (req, res, next) => {
+  const { business_name, industry_sector, is_registered, monthly_avg_revenue, readiness_score } = req.body;
+  const userId = req.user.user_id; // Securely extracted from JWT payload
 
   try {
-    const [userExists] = await db.query('SELECT user_id FROM users WHERE user_id = ?', [user_id]);
-    if (userExists.length === 0) {
-      return res.status(404).json({ success: false, message: `User with ID ${user_id} does not exist.` });
-    }
-
     const sql = `
       INSERT INTO businesses (user_id, business_name, industry_sector, is_registered, monthly_avg_revenue, readiness_score)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
 
     const [result] = await db.query(sql, [
-      user_id,
+      userId,
       business_name,
       industry_sector,
       is_registered !== undefined ? is_registered : false,
@@ -61,20 +68,31 @@ router.post('/', async (req, res) => {
       business_id: result.insertId
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
-router.put('/:id', async (req, res) => {
+// ==========================================
+// PUT /businesses/:id (Update Business)
+// ==========================================
+router.put('/:id', authenticate, async (req, res, next) => {
   const { id } = req.params;
   const { business_name, industry_sector, is_registered, monthly_avg_revenue, readiness_score } = req.body;
+  const userId = req.user.user_id;
 
   try {
+    // 1. Verify business existence and ownership
     const [existing] = await db.query('SELECT * FROM businesses WHERE business_id = ?', [id]);
+
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: 'Business not found.' });
     }
 
+    if (existing[0].user_id !== userId) {
+      return res.status(403).json({ success: false, message: 'Access forbidden: You do not own this business.' });
+    }
+
+    // 2. Build dynamic update query
     const updates = [];
     const values = [];
 
@@ -94,7 +112,7 @@ router.put('/:id', async (req, res) => {
 
     res.status(200).json({ success: true, message: `Business with ID ${id} updated successfully.` });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 });
 
