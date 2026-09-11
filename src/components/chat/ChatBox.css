@@ -237,6 +237,19 @@
   margin: 0;
 }
 
+.chat-notice {
+  margin: 0 20px 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.82rem;
+}
+
+.chat-notice p {
+  margin: 0;
+}
+
 .chat-retry-btn {
   flex-shrink: 0;
   border: 0;

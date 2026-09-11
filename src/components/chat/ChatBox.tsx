@@ -4,6 +4,7 @@ import { streamChatCompletion } from '../../api/chatStream.ts'
 import {
   createChatMessage,
   type ChatMessage as ChatMessageModel,
+  type ChatProvider,
   type UserContext,
 } from '../../types/chat.ts'
 import { ChatInput } from './ChatInput.tsx'
@@ -63,6 +64,7 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const sendTextRef = useRef<(text: string, history: ChatMessageModel[]) => Promise<void>>(
@@ -109,6 +111,7 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
 
       setDraft('')
       setError(null)
+      setNotice(null)
       setLoading(true)
       setMessages([...nextHistory, assistantMessage])
 
@@ -121,6 +124,13 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
           {
             token: token || 'demo-token',
             signal: controller.signal,
+            onProvider: (provider: ChatProvider) => {
+              if (provider === 'local') {
+                setNotice(
+                  'Live Gemini is not connected yet. Sena is answering from your words on the server. Add GEMINI_API_KEY to server/.env for the full model.',
+                )
+              }
+            },
             onDelta: (delta) => {
               setMessages((current) =>
                 current.map((item) =>
@@ -267,6 +277,12 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
           <button type="button" className="chat-retry-btn" onClick={handleRetry}>
             Retry
           </button>
+        </div>
+      )}
+
+      {notice && !error && (
+        <div className="chat-notice" role="status">
+          <p>{notice}</p>
         </div>
       )}
 
