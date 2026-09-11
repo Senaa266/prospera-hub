@@ -11,8 +11,10 @@ const KEY_LAST = 'grants_fetched_at'
 
 const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 }
 
-const BLOCK_HOST = /(docs\.google|drive\.google|storage\.googleapis|dropbox|forms\.gle|cloudinary|twitter\.com|x\.com|facebook\.com|linkedin\.com|instagram\.com|youtube\.com|youtu\.be|tumblr\.com|t\.me|whatsapp|wa\.me|tg\.me|bit\.ly|goo\.gl|tinyurl|t\.co|mailarchive|\.wp\.com|wordpress|gravatar)/i
+const BLOCK_HOST = /(docs\.google|drive\.google|storage\.googleapis|dropbox|cloudinary|twitter\.com|x\.com|facebook\.com|linkedin\.com|instagram\.com|youtube\.com|youtu\.be|tumblr\.com|t\.me|whatsapp|wa\.me|tg\.me|bit\.ly|goo\.gl|tinyurl|t\.co|mailarchive|\.wp\.com|wordpress|gravatar|addtoany|disqus)/i
 const SAME_HOST = /opportunitydesk\.org/i
+const PORTAL_HOST = /(forms\.gle|jotform|typeform|airtable|surveymonkey|rsvp\.withgoogle|eventbrite|smapply|submittable|grantinterface|fluxx\.io|grantplatform)/i
+const LANG_WORD = /^(english|french|spanish|portuguese|arabic|swahili|hausa|deutsch|apply)$/i
 
 let refreshing = null
 
@@ -99,6 +101,66 @@ function grantsFreshEnough() {
   return Number.isFinite(at) && Date.now() - at < TTL_MS
 }
 
+function parseAnchors(html) {
+  const anchors = []
+  const re = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>\s*([\s\S]*?)\s*<\/a>/gi
+  let m
+  while ((m = re.exec(html))) {
+    const url = m[1]
+    const text = stripHtml(m[2]).replace(/\s+/g, ' ').trim()
+    if (!text) continue
+    try {
+      const u = new URL(url)
+      if (SAME_HOST.test(u.hostname) || BLOCK_HOST.test(u.hostname) || u.href.includes('#')) continue
+      anchors.push({ text: text.slice(0, 80), url: u.href.split('#')[0] })
+    } catch {
+      /* skip malformed link */
+    }
+  }
+  return anchors
+}
+
+function anchorScore({ text, url }) {
+  const t = text.toLowerCase()
+  try {
+    if (SAME_HOST.test(new URL(url).hostname)) return -1000
+  } catch {
+    return -1000
+  }
+
+  let score = 0
+  if (/(apply|application|register|sign[-\s]?up|submit|enrol|nominat)/.test(t)) score += 80
+  if (/(official|website|visit|programme?\s*page|details|more info|full details)/.test(t)) score += 64
+  if (/form/.test(t)) score += 24
+  if (/donate|donation|give now|contribute|support us|membership/.test(t)) score -= 60
+  if (/(privacy|terms|cookie|about us|home page|contact us|faq)/.test(t)) score -= 40
+  if (/^(read more|click here|here|learn more|open article)$/i.test(text)) score -= 8
+
+  try {
+    const u = new URL(url)
+    const depth = u.pathname.split('/').filter(Boolean).length
+    score += depth * 16
+    if (!PORTAL_HOST.test(u.hostname) && depth > 1) score += 12
+  } catch {
+    /* ignore */
+  }
+  return score
+}
+
+function segmentScores(links) {
+  const official = []
+  const forms = []
+  for (const l of links) {
+    const isPortal = PORTAL_HOST.test(l.url)
+    const isLang = LANG_WORD.test(l.text.trim())
+    if (isPortal || isLang) forms.push(l)
+    else official.push(l)
+  }
+  official.sort((a, b) => anchorScore(b) - anchorScore(a))
+  forms.sort((a, b) => anchorScore(b) - anchorScore(a))
+  return [...official, ...forms].slice(0, 8)
+}
+
 async function fetchText(url, ms = 12000) {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), ms)
@@ -128,43 +190,27 @@ async function parallel(items, limit, fn) {
   return out
 }
 
-function extractFunder(html, sameHost) {
+function extractArticle(html) {
   let og = html.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i)
   og = og || html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:image"/i)
   const ogImage = og ? og[1].split(' ')[0] : null
 
-  const counts = new Map()
-  let m
-  const re = /href="(https?:\/\/[^"?#]+)/gi
-  while ((m = re.exec(html)) && counts.size < 40) {
-    try {
-      const u = new URL(m[1])
-      if (u.hostname === sameHost || SAME_HOST.test(u.hostname) || BLOCK_HOST.test(u.hostname)) continue
-      counts.set(u.hostname, (counts.get(u.hostname) || 0) + 1)
-    } catch {
-      /* skip malformed link */
-    }
-  }
-
-  let funderHost = null
-  let best = 0
-  for (const [host, n] of counts) {
-    if (n > best) {
-      best = n
-      funderHost = host
-    }
-  }
-  return { ogImage, funderHost }
+  const links = segmentScores(parseAnchors(html))
+  return { ogImage, links }
 }
 
 async function enrich(row) {
   const sameHost = new URL(row.link).hostname
   try {
     const html = await fetchText(row.link)
-    const { ogImage, funderHost } = extractFunder(html, sameHost)
-    row.funder = funderHost ? `https://${funderHost}` : row.link
-    row.image = ogImage || faviconFor(funderHost || sameHost)
+    const { ogImage, links } = extractArticle(html)
+    row.links = links
+    row.bestLink = links[0]?.url
+    row.funder = row.bestLink || row.link
+    row.image = ogImage || faviconFor(sameHost)
   } catch {
+    row.links = []
+    row.bestLink = null
     row.funder = row.link
     row.image = faviconFor(sameHost)
   }
@@ -237,7 +283,13 @@ export async function refreshGrants() {
   if (aiConfigured()) {
     try {
       const accepted = await classifyGrants(
-        enriched.map((r) => ({ article: r.link, title: r.title, desc: r.desc, funder: r.funder }))
+        enriched.map((r) => ({
+          article: r.link,
+          title: r.title,
+          desc: r.desc,
+          funder: r.funder,
+          links: r.links || [],
+        }))
       )
       if (accepted.length > 0) {
         const byArticle = new Map(enriched.map((r) => [r.link, r]))
@@ -245,7 +297,15 @@ export async function refreshGrants() {
           .map((a) => {
             const r = byArticle.get(a.article)
             if (!r) return null
-            return { ...r, source: a.org || r.source, externalUrl: a.officialUrl || r.funder }
+            const links = r.links || []
+            const chosen = links.some((l) => l.url === a.officialUrl)
+              ? a.officialUrl
+              : links[0]?.url
+            return {
+              ...r,
+              source: a.org || r.source,
+              externalUrl: chosen || r.funder || r.link,
+            }
           })
           .filter(Boolean)
         aiUsed = true

@@ -67,7 +67,7 @@ function buildPrompt(items) {
     id: it.article,
     title: it.title,
     description: (it.desc || '').slice(0, 300),
-    url: it.funder,
+    links: (it.links || []).map((l) => ({ label: l.text, url: l.url })),
   }))
 
   return `You filter grant listings for a business-funding app used by small business owners and startups in Africa.
@@ -89,10 +89,15 @@ REJECT items that are:
 - conferences, webinars, training, mentorship with no funding
 - roundup/listicle posts that just list many opportunities
 
-Return ONLY a JSON object, no extra text:
-{"accepted":[{"id":"<the original id>","kind":"grant","org":"funder/organisation name","officialUrl":"https://official funding page if present in item.url, else empty string","reason":"one short line"}]}
+Each item also includes "links": links scraped from the blog post. Some may be the exact application page or official programme page; others are unrelated navigation or donation links.
 
-"officialUrl": only use item.url when it looks like the funder's own application page (starts with http). NEVER invent or guess URLs; otherwise empty string.
+Return ONLY a JSON object, no extra text:
+{"accepted":[{"id":"<the original id>","kind":"grant","org":"funder/organisation name","officialUrl":"<pick ONE exact link from this item's links list, verbatim>","reason":"one short line"}]}
+
+"officialUrl" rules:
+- Choose ONLY from the provided "links" for that item — copy the url value exactly. Prefer the exact application/registration page or the funder's official programme page over homepages, forms, or news pages.
+- If one of the item's links is a clear hit, use it. Otherwise set "".
+- NEVER invent, combine, or modify URLs. Never use a link from a different item.
 "reason": a short note like "Startup grant up to $50k, founders can apply".
 
 Items:
