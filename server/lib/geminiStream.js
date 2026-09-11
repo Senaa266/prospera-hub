@@ -1,4 +1,3 @@
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
 const GEMINI_TIMEOUT_MS = 40_000
 
 /**
@@ -19,14 +18,13 @@ export function toGeminiContents(messages) {
  */
 function consumeSse(buffer, chunk) {
   const combined = buffer + chunk
-  const parts = combined.split('\n\n')
-  const rest = parts.pop() ?? ''
+  const lines = combined.split(/\r?\n/)
+  const rest = lines.pop() ?? ''
   const texts = []
 
-  for (const part of parts) {
-    const line = part.split('\n').find((entry) => entry.startsWith('data:'))
-    if (!line) continue
-    const json = line.slice(5).trim()
+  for (const line of lines) {
+    if (!line.startsWith('data:')) continue
+    const json = line.replace(/^data:\s*/, '').trim()
     if (!json) continue
     try {
       const payload = JSON.parse(json)
@@ -50,11 +48,12 @@ export async function streamGeminiChat({ systemInstruction, messages, onDelta })
     throw Object.assign(new Error('Gemini is not configured'), { status: 503 })
   }
 
+  const model = process.env.GEMINI_MODEL?.trim() || 'gemini-3.6-flash'
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS)
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

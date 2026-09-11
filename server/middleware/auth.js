@@ -11,7 +11,7 @@ export function authenticate(req, res, next) {
 
   const token = header.split(' ')[1]
 
-  if (token === 'demo-token') {
+  if (token === 'demo-token' && process.env.NODE_ENV !== 'production') {
     req.user = { id: 1, email: 'demo@prospera.com', role: 'entrepreneur' }
     return next()
   }
