@@ -71,7 +71,8 @@ function Dashboard() {
 
   const handleChatSubmit = (e) => {
     e.preventDefault()
-    navigate('/ai-chat')
+    const q = chatInput.trim()
+    navigate(q ? `/ai-chat?prompt=${encodeURIComponent(q)}` : '/ai-chat')
   }
 
   const banner = GRANTS[bannerIndex]
@@ -172,7 +173,11 @@ function Dashboard() {
 
           <div className="ai-suggestions">
             {SUGGESTIONS.map((s) => (
-              <button key={s} type="button" onClick={() => navigate('/ai-chat')}>
+              <button
+                key={s}
+                type="button"
+                onClick={() => navigate(`/ai-chat?prompt=${encodeURIComponent(s)}`)}
+              >
                 {s}
               </button>
             ))}
