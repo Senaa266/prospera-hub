@@ -13,7 +13,6 @@ import savingsRoutes from './routes/savings.js'
 import supplierRoutes from './routes/suppliers.js'
 import financeRoutes from './routes/finance.js'
 import aiRoutes from './routes/ai.js'
-import { refreshGrantsIfStale } from './scraper.js'
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -39,5 +38,3 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`Prospera Hub API running on http://localhost:${PORT}`)
 })
-
-refreshGrantsIfStale().catch(() => {})
