@@ -5,6 +5,7 @@ import { getFinanceSnapshot } from './finance.js'
 import { streamGeminiChat } from '../lib/geminiStream.js'
 import { buildLocalCoachReply } from '../lib/senaLocalCoach.js'
 import { getAiProviders } from '../lib/loadEnv.js'
+import { buildTrackerEvent } from '../lib/extractTracker.js'
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
@@ -54,11 +55,11 @@ function setSseHeaders(res) {
  * @param {import('express').Response} res
  * @param {string} text
  */
-async function streamPlainText(res, text) {
+async function streamPlainText(res, text, onDelta) {
   const parts = text.split(/(\s+)/)
   for (const part of parts) {
     if (!part) continue
-    writeSse(res, { content: part })
+    onDelta(part)
     await new Promise((resolve) => setTimeout(resolve, 12))
   }
 }
@@ -69,7 +70,7 @@ async function streamPlainText(res, text) {
  * @param {string} system
  * @param {Array<{ role: 'user' | 'assistant', content: string }>} messages
  */
-async function streamOpenAiChat(res, system, messages) {
+async function streamOpenAiChat(res, system, messages, onDelta) {
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   const openai = new OpenAI({ apiKey, timeout: 40_000 })
   const stream = await openai.chat.completions.create({
@@ -82,7 +83,7 @@ async function streamOpenAiChat(res, system, messages) {
 
   for await (const chunk of stream) {
     const delta = chunk.choices[0]?.delta?.content
-    if (delta) writeSse(res, { content: delta })
+    if (delta) onDelta(delta)
   }
 }
 
@@ -117,18 +118,28 @@ export async function chat(req, res) {
     setSseHeaders(res)
     writeSse(res, { provider })
 
+    let reply = ''
+    const onDelta = (text) => {
+      reply += text
+      writeSse(res, { content: text })
+    }
+
     if (providers.gemini) {
       await streamGeminiChat({
         apiKey: providers.geminiKey,
         systemInstruction: system,
         messages,
-        onDelta: (text) => writeSse(res, { content: text }),
+        onDelta,
       })
     } else if (providers.openai) {
-      await streamOpenAiChat(res, system, messages)
+      await streamOpenAiChat(res, system, messages, onDelta)
     } else {
-      await streamPlainText(res, buildLocalCoachReply(messages, userContext))
+      await streamPlainText(res, buildLocalCoachReply(messages, userContext), onDelta)
     }
+
+    const lastUser = [...messages].reverse().find((item) => item.role === 'user')
+    const tracker = buildTrackerEvent(lastUser?.content || '', reply)
+    if (tracker) writeSse(res, { tracker })
 
     writeSse(res, { done: true })
     res.end()

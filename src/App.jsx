@@ -6,7 +6,9 @@ import AIChat from './pages/AIChat'
 import Grants from './pages/Grants'
 import Savings from './pages/Savings'
 import SavingsDetail from './pages/SavingsDetail'
+import TrackerDetail from './pages/TrackerDetail'
 import Suppliers from './pages/Suppliers'
+import SupplierDetail from './pages/SupplierDetail'
 import Finance from './pages/Finance'
 import ChatLauncher from './components/chat/ChatLauncher'
 import { useAuth } from './context/AuthContext'
@@ -77,10 +79,26 @@ function App() {
           }
         />
         <Route
+          path="/suppliers/:id"
+          element={
+            <RequireAuth>
+              <SupplierDetail />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="/finance"
           element={
             <RequireAuth>
               <Finance />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/trackers/:id"
+          element={
+            <RequireAuth>
+              <TrackerDetail />
             </RequireAuth>
           }
         />

@@ -98,6 +98,11 @@ export function buildLocalCoachReply(messages, userContext) {
     return `Great — let's price your ${idea}${country ? ` in ${country}` : ''}.\n\n1. Add up batter/materials, ${pay}, transport, packaging, and your time per unit.\n2. Check nearby stalls, WhatsApp groups, and delivery apps for the going rate.\n3. Set a floor (cost + a living margin) and a stretch price for custom or rush orders.\n4. Test for two weeks and adjust. ${pay} makes small price tests easy.\n\nWhat does one ${idea} unit cost you to make, and what do neighbours charge?`
   }
 
+  if (/\b(todo|to-do|roadmap|action plan|90[-\s]?day|checklist|step[-\s]?by[-\s]?step)\b/.test(lower) || (idea && /\b(plan|roadmap|todo)\b/.test(lower))) {
+    const focus = idea || 'your business'
+    return `Here is a practical 90-day tracker for ${focus}${country ? ` in ${country}` : ''}.\n\n1. Write your 2–3 hero products and a sell price in ${currency}.\n2. List starter costs (materials, ${pay}, packaging, signage) in Prospera Finance.\n3. Complete ${license} before you scale beyond friends and family.\n4. Sell to people you already know for 30 days and log every sale.\n5. Pick one busy location and one delivery channel in days 31–60.\n6. Drop weak items, restock winners, and lock a weekly susu amount you can afford.\n7. Review cash weekly — do not take informal credit you cannot see.\n\nCheck these off on your dashboard as you go. Want pricing next, or a grant-fit check?`
+  }
+
   if (idea && wantsExpand) {
     return `Love that you want to grow the ${idea} business${country ? ` in ${country}` : ''}. Let's keep it realistic.\n\n1. Prove demand at your current spot before a second location — track 4 weeks of sales in Prospera records.\n2. Repeat your best-selling item first; don't add a new menu until the original one is busy.\n3. Fund expansion from profit or a susu payout, not informal debt you can't see.\n4. Use Prospera's Investor & Grant Matchmaking Hub only after you can show numbers.\n\nWhere are most of your buyers coming from right now — walk-ins, WhatsApp, or deliveries?`
   }

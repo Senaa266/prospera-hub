@@ -1,4 +1,4 @@
-import type { ChatProvider, ChatRequest, ChatStreamEvent } from '../types/chat.ts'
+import type { ChatProvider, ChatRequest, ChatStreamEvent, ChatTrackerPayload } from '../types/chat.ts'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -41,6 +41,7 @@ export type StreamChatOptions = {
   signal?: AbortSignal
   onDelta: (text: string) => void
   onProvider?: (provider: ChatProvider) => void
+  onTracker?: (tracker: ChatTrackerPayload) => void
 }
 
 /**
@@ -90,6 +91,7 @@ export async function streamChatCompletion(
     for (const event of decoded.events) {
       if (event.error) throw new Error(event.error)
       if (event.provider) options.onProvider?.(event.provider)
+      if (event.tracker) options.onTracker?.(event.tracker)
       if (event.content) options.onDelta(event.content)
     }
   }

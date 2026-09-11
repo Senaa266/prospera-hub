@@ -1,19 +1,25 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useChat } from '../context/ChatContext'
-import Sidebar from '../components/layout/Sidebar'
+import { useTrackers } from '../context/TrackersContext'
+import { trackerProgress } from '../lib/trackerProgress'
 import Icon from '../components/icons'
 import GrantCard from '../components/GrantCard'
+import { AppButton } from '../components/ui/AppButton'
+import { AppCard } from '../components/ui/AppCard'
+import { GrantSkeleton } from '../components/ui/Skeleton'
+import { PageHeader } from '../components/ui/PageHeader'
+import { PageShell } from '../components/ui/PageShell'
+import { ProgressBar } from '../components/ui/ProgressBar'
 import { loadGrants } from '../utils/grants'
 import { DEMO_GRANTS } from '../data/grants'
-import './Dashboard.css'
 
 const STATS = [
-  { label: 'Total savings', value: 'GH₵ 2,450', icon: 'wallet', change: '+12% this week', grad: 'linear-gradient(135deg,#e11d48,#9f1239)' },
-  { label: 'Grants matched', value: '3', icon: 'target', change: '2 new this month', grad: 'linear-gradient(135deg,#fb7185,#e11d48)' },
-  { label: 'Business progress', value: '35%', icon: 'rocket', change: '5 steps left', grad: 'linear-gradient(135deg,#9f1239,#4a044e)' },
-  { label: 'Revenue this month', value: 'GH₵ 1,250', icon: 'trend', change: '+18% vs last month', grad: 'linear-gradient(135deg,#e11d48,#fb7185)' },
+  { label: 'Total savings', value: 'GH₵ 2,450', icon: 'wallet', change: '+12% this week', from: 'from-prospera', to: 'to-prospera-dark' },
+  { label: 'Grants matched', value: '3', icon: 'target', change: '2 new this month', from: 'from-rose-400', to: 'to-prospera' },
+  { label: 'Business progress', value: '35%', icon: 'rocket', change: '5 steps left', from: 'from-prospera-dark', to: 'to-brand-violet' },
+  { label: 'Revenue this month', value: 'GH₵ 1,250', icon: 'trend', change: '+18% vs last month', from: 'from-prospera', to: 'to-rose-300' },
 ]
 
 const SUGGESTIONS = ['How do I start my bead business?', 'Which grants fit my business?', 'Explain susu savings']
@@ -21,9 +27,11 @@ const SUGGESTIONS = ['How do I start my bead business?', 'Which grants fit my bu
 function Dashboard() {
   const { user, logout } = useAuth()
   const { open } = useChat()
+  const { trackers } = useTrackers()
   const navigate = useNavigate()
   const [featured, setFeatured] = useState(DEMO_GRANTS.slice(0, 4))
   const [featuredLive, setFeaturedLive] = useState(false)
+  const [loadingGrants, setLoadingGrants] = useState(true)
   const [chatInput, setChatInput] = useState('')
 
   useEffect(() => {
@@ -33,6 +41,7 @@ function Dashboard() {
       if (active) {
         setFeatured(grants.slice(0, 4))
         setFeaturedLive(live)
+        setLoadingGrants(false)
       }
     }
     load()
@@ -57,116 +66,134 @@ function Dashboard() {
   }
 
   return (
-    <div className="dashboard">
-      <Sidebar />
-
-      <main className="dashboard-main">
-        <header className="dash-header">
-          <div>
-            <h1 className="greeting">
-              {greeting}, <span className="greet-name">{firstName}</span>
-            </h1>
-            <p className="dash-sub">Here's what's happening with your business today.</p>
-          </div>
-          <button className="logout-btn" onClick={handleLogout} type="button">
+    <PageShell wide>
+      <PageHeader
+        title={`${greeting},`}
+        accent={firstName}
+        subtitle="Here's what's happening with your business today."
+        actions={
+          <AppButton variant="danger" onClick={handleLogout}>
             <Icon name="logout" size={16} />
             Log out
-          </button>
-        </header>
+          </AppButton>
+        }
+      />
 
-        <section className="dash-grants">
-          <div className="section-head">
+      {trackers.length > 0 && (
+        <section className="mb-7" aria-labelledby="tracker-heading">
+          <div className="mb-3 flex items-end justify-between gap-3">
             <div>
-              <h2>Opportunities for you</h2>
-              <p>Hand-picked funding pulled live from external sources.</p>
-            </div>
-            <div className="section-actions">
-              <span className="live-pill">
-                <span className="live-dot" />
-                {featuredLive ? 'Live' : 'Demo'}
-              </span>
-              <button className="view-all" type="button" onClick={() => navigate('/grants')}>
-                View all grants
-                <Icon name="arrowRight" size={16} />
-              </button>
+              <h2 id="tracker-heading" className="m-0 text-lg font-bold text-ink-strong">
+                Sena action plans
+              </h2>
+              <p className="m-0 text-sm text-muted">Check items off — progress updates here instantly.</p>
             </div>
           </div>
-
-          <div className="dash-grants-grid">
-            {featured.map((g) => (
-              <GrantCard key={g.id ?? g.title} grant={g} onExplore={() => navigate('/grants')} />
-            ))}
+          <div className="grid gap-3 md:grid-cols-2">
+            {trackers.map((tracker) => {
+              const { done, total, percent } = trackerProgress(tracker)
+              return (
+                <Link key={tracker.id} to={`/trackers/${tracker.id}`} className="no-underline">
+                  <AppCard className="h-full">
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <h3 className="m-0 text-base font-semibold text-ink-strong">{tracker.title}</h3>
+                      <span className="text-xs font-semibold text-muted">
+                        {done}/{total}
+                      </span>
+                    </div>
+                    <ProgressBar value={percent} label={`${tracker.title} progress`} />
+                    <p className="mb-0 mt-2 text-sm font-medium text-prospera">{percent}% complete</p>
+                  </AppCard>
+                </Link>
+              )
+            })}
           </div>
         </section>
+      )}
 
-        <section className="stats-grid">
-          {STATS.map((s) => (
-            <div className="stat-card" key={s.label}>
-              <div className="stat-glow" style={{ background: s.grad }} />
-              <div className="stat-card-top">
-                <div className="stat-icon" style={{ background: s.grad }}>
-                  <Icon name={s.icon} size={20} />
-                </div>
-                <span className="stat-chart" style={{ background: s.grad.replace('linear-gradient', 'radial-gradient') }}>
-                  <span className="chart-col" />
-                  <span className="chart-col c2" />
-                  <span className="chart-col c3" />
-                </span>
-              </div>
-              <span className="stat-label">{s.label}</span>
-              <strong className="stat-value">{s.value}</strong>
-              <span className="stat-change">
-                <Icon name="trend" size={12} />
-                {s.change}
-              </span>
-            </div>
-          ))}
-        </section>
-
-        <section className="ai-card">
-          <div className="ai-card-top">
-            <div className="ai-avatar">
-              <Icon name="sparkles" size={22} />
-            </div>
-            <div className="ai-title">
-              <h3>Ask your AI Coach</h3>
-              <p>Ideas · grants · finances · suppliers — ask anything and get a plan.</p>
-            </div>
-            <span className="ai-status">
-              <span className="status-dot" />
-              Online
+      <section className="mb-7">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="m-0 text-lg font-bold text-ink-strong">Opportunities for you</h2>
+            <p className="m-0 text-sm text-muted">Hand-picked funding pulled live from external sources.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-muted shadow-[var(--shadow-card)]">
+              <span className={`h-2 w-2 rounded-full ${featuredLive ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+              {featuredLive ? 'Live' : 'Demo'}
             </span>
+            <AppButton variant="outline" onClick={() => navigate('/grants')}>
+              View all grants
+              <Icon name="arrowRight" size={16} />
+            </AppButton>
           </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {loadingGrants
+            ? [1, 2, 3, 4].map((key) => <GrantSkeleton key={key} />)
+            : featured.map((g) => <GrantCard key={g.id ?? g.title} grant={g} />)}
+        </div>
+      </section>
 
-          <div className="ai-suggestions">
-            {SUGGESTIONS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => open(s)}
-              >
-                {s}
-              </button>
-            ))}
+      <section className="mb-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {STATS.map((s) => (
+          <AppCard key={s.label} className="relative overflow-hidden">
+            <div className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${s.from} ${s.to} opacity-20`} />
+            <div className="mb-4 flex items-center justify-between">
+              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${s.from} ${s.to} text-white`}>
+                <Icon name={s.icon} size={20} />
+              </div>
+            </div>
+            <span className="text-sm text-muted">{s.label}</span>
+            <strong className="mt-1 block text-2xl tracking-tight text-ink-strong">{s.value}</strong>
+            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+              <Icon name="trend" size={12} />
+              {s.change}
+            </span>
+          </AppCard>
+        ))}
+      </section>
+
+      <AppCard className="border-line">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-strong text-prospera">
+            <Icon name="sparkles" size={22} />
           </div>
-
-          <form className="ai-input-row" onSubmit={handleChatSubmit}>
-            <button className="voice-btn" type="button" aria-label="Voice input">
-              <Icon name="mic" size={18} />
+          <div className="min-w-0 flex-1">
+            <h3 className="m-0 text-lg font-bold text-ink-strong">Ask your AI Coach</h3>
+            <p className="m-0 text-sm text-muted">Ideas · grants · finances — ask for a plan and Sena will save a tracker.</p>
+          </div>
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            Online
+          </span>
+        </div>
+        <div className="mb-4 flex flex-wrap gap-2">
+          {SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => open(s)}
+              className="rounded-full border border-line bg-canvas px-3 py-1.5 text-sm text-ink transition hover:-translate-y-0.5 hover:border-prospera hover:bg-prospera-soft"
+            >
+              {s}
             </button>
-            <input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Type your question..."
-            />
-            <button className="send-btn" type="submit" disabled={!chatInput.trim()}>
-              Ask AI
-              <Icon name="send" size={15} />
-            </button>
-          </form>
-        </section>
-      </main>
-    </div>
+          ))}
+        </div>
+        <form className="flex flex-wrap gap-2" onSubmit={handleChatSubmit}>
+          <input
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="Type your question..."
+            className="min-w-[200px] flex-1 rounded-xl border border-line bg-canvas px-3 py-2.5 text-ink"
+          />
+          <AppButton type="submit" disabled={!chatInput.trim()}>
+            Ask AI
+            <Icon name="send" size={15} />
+          </AppButton>
+        </form>
+      </AppCard>
+    </PageShell>
   )
 }
 

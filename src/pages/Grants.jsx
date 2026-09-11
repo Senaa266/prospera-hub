@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
-import Sidebar from '../components/layout/Sidebar'
 import Icon from '../components/icons'
 import AIOffer from '../components/AIOffer'
 import GrantCard from '../components/GrantCard'
+import { AppButton } from '../components/ui/AppButton'
+import { GrantSkeleton } from '../components/ui/Skeleton'
+import { PageHeader } from '../components/ui/PageHeader'
+import { PageShell } from '../components/ui/PageShell'
 import { loadGrants } from '../utils/grants'
 import { DEMO_GRANTS } from '../data/grants'
-import './Grants.css'
 
 function Grants() {
   const [grants, setGrants] = useState(DEMO_GRANTS)
   const [live, setLive] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [type, setType] = useState('All')
   const [sort, setSort] = useState('deadline')
-  const [expanded, setExpanded] = useState(null)
   const [saved, setSaved] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('savedGrants')) || []
@@ -29,6 +31,7 @@ function Grants() {
       if (active) {
         setGrants(list)
         setLive(isLive)
+        setLoading(false)
       }
     }
     load()
@@ -52,7 +55,7 @@ function Grants() {
       list = [...list].sort(
         (a, b) =>
           (a.deadline === 'Rolling' ? Number.MAX_SAFE_INTEGER : new Date(a.deadline).getTime()) -
-          (b.deadline === 'Rolling' ? Number.MAX_SAFE_INTEGER : new Date(b.deadline).getTime())
+          (b.deadline === 'Rolling' ? Number.MAX_SAFE_INTEGER : new Date(b.deadline).getTime()),
       )
     } else if (sort === 'amount') {
       list = [...list].sort((a, b) => (b.amountMax || 0) - (a.amountMax || 0))
@@ -77,119 +80,114 @@ function Grants() {
   }
 
   return (
-    <div className="dashboard grants-page">
-      <Sidebar />
-      <main className="grant-main">
-        <div className="dash-header">
-          <div>
-            <h1 className="greeting">
-              Grants <span className="greet-name">&amp; Funding</span>
-            </h1>
-            <p className="dash-sub">Live opportunities from external funding sources. Filter, save and check fit.</p>
-          </div>
-          <span className="live-pill">
-            <span className="live-dot" />
+    <PageShell wide>
+      <PageHeader
+        title="Grants"
+        accent="& Funding"
+        subtitle="Live opportunities from external funding sources. Filter, save and check fit."
+        actions={
+          <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-muted shadow-[var(--shadow-card)]">
+            <span className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-500' : 'bg-amber-400'}`} />
             {live ? 'Live · from the web' : 'Demo data'}
           </span>
+        }
+      />
+
+      {!live && !loading && (
+        <div className="mb-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <Icon name="external" size={16} />
+          <p className="m-0">
+            <strong>Offline.</strong> We couldn&apos;t reach the funding feed — showing demo data.
+          </p>
         </div>
+      )}
 
-        {!live && (
-          <div className="demo-banner">
-            <Icon name="external" size={16} />
-            <p>
-              <strong>Offline.</strong> We couldn&apos;t reach the funding feed — showing demo data. Start the API
-              and the live grants will stream here.
-            </p>
-          </div>
-        )}
-
-        <div className="filter-bar">
-          <div className="filter-top">
-            <div className="search-box">
+      <div className="mb-4 rounded-2xl border border-line bg-white p-4 shadow-[var(--shadow-card)]">
+        <div className="mb-3 flex flex-wrap gap-3">
+          <label className="relative min-w-[220px] flex-1">
+            <span className="sr-only">Search grants</span>
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
               <Icon name="search" size={18} />
-              <input
-                type="text"
-                placeholder="Search grants, providers, regions…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              {query && (
-                <button className="clear-btn" type="button" onClick={() => setQuery('')} aria-label="Clear search">
-                  <Icon name="x" size={16} />
-                </button>
-              )}
-            </div>
-
-            <div className="sort-box">
-              <Icon name="sort" size={16} />
-              <select value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="deadline">Deadline (soonest)</option>
-                <option value="amount">Amount (highest)</option>
-                <option value="newest">Newest first</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="filter-types">
-            <Icon name="sliders" size={15} />
-            {types.map((t) => (
-              <button
-                key={t}
-                className={`type-chip ${type === t ? 'active' : ''}`}
-                type="button"
-                onClick={() => setType(t)}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+            </span>
+            <input
+              type="search"
+              placeholder="Search grants, providers, regions…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full rounded-xl border border-line bg-canvas py-2.5 pl-10 pr-3 text-ink"
+            />
+          </label>
+          <label className="flex items-center gap-2 rounded-xl border border-line bg-canvas px-3 text-sm text-muted">
+            <Icon name="sort" size={16} />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="border-0 bg-transparent py-2.5 text-ink"
+            >
+              <option value="deadline">Deadline (soonest)</option>
+              <option value="amount">Amount (highest)</option>
+              <option value="newest">Newest first</option>
+            </select>
+          </label>
         </div>
-
-        <div className="results-meta">
-          <span>
-            {filtered.length} grant{filtered.length === 1 ? '' : 's'}
-            {type !== 'All' && ` · ${type}`}
-          </span>
-          <span className="saved-count">
-            <Icon name="bookmark" size={14} />
-            {saved.length} saved
-          </span>
-        </div>
-
-        <div className="grants-list">
-          {filtered.map((g) => {
-            const id = g.id ?? g.title
-            return (
-              <GrantCard
-                key={id}
-                grant={g}
-                expanded={expanded === id}
-                saved={saved.includes(id)}
-                onToggleSaved={toggleSaved}
-                onExplore={() => setExpanded((prev) => (prev === id ? null : id))}
-              />
-            )
-          })}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="empty-state">
-            <Icon name="search" size={30} />
-            <h3>No grants match your filters</h3>
-            <p>Try a different keyword or reset the filters to see everything.</p>
-            <button type="button" className="btn-apply" onClick={resetFilters}>
-              Reset filters
+        <div className="flex flex-wrap items-center gap-2">
+          <Icon name="sliders" size={15} />
+          {types.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setType(t)}
+              className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                type === t
+                  ? 'bg-ink-strong text-white'
+                  : 'bg-canvas text-muted hover:-translate-y-0.5 hover:text-ink'
+              }`}
+            >
+              {t}
             </button>
-          </div>
-        )}
+          ))}
+        </div>
+      </div>
 
+      <div className="mb-3 flex items-center justify-between text-sm text-muted">
+        <span>
+          {filtered.length} grant{filtered.length === 1 ? '' : 's'}
+          {type !== 'All' && ` · ${type}`}
+        </span>
+        <span className="inline-flex items-center gap-1 font-semibold">
+          <Icon name="bookmark" size={14} />
+          {saved.length} saved
+        </span>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {loading
+          ? [1, 2, 3, 4].map((key) => <GrantSkeleton key={key} />)
+          : filtered.map((g) => {
+              const id = g.id ?? g.title
+              return (
+                <GrantCard key={id} grant={g} saved={saved.includes(id)} onToggleSaved={toggleSaved} />
+              )
+            })}
+      </div>
+
+      {!loading && filtered.length === 0 && (
+        <div className="mt-8 text-center">
+          <Icon name="search" size={30} />
+          <h3 className="mt-2 text-ink-strong">No grants match your filters</h3>
+          <p className="text-muted">Try a different keyword or reset the filters.</p>
+          <AppButton onClick={resetFilters}>Reset filters</AppButton>
+        </div>
+      )}
+
+      <div className="mt-8">
         <AIOffer
           title="Not sure where to start?"
           text="Your AI coach ranks these grants against your business profile, drafts the application, and tracks every deadline for you."
           points={['Ranked by fit', 'Draft applications', 'Deadline reminders']}
         />
-      </main>
-    </div>
+      </div>
+    </PageShell>
   )
 }
 

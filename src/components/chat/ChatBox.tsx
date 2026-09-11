@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTrackers } from '../../context/TrackersContext'
 import { streamChatCompletion } from '../../api/chatStream.ts'
+import { buildTrackerEvent } from '../../lib/extractTracker.js'
 import {
   createChatMessage,
   type ChatMessage as ChatMessageModel,
@@ -60,11 +63,13 @@ type AuthUser = {
  */
 export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
   const { user, token } = useAuth() as { user: AuthUser | null; token: string | null }
+  const { addTracker } = useTrackers()
   const [messages, setMessages] = useState<ChatMessageModel[]>(loadSessionMessages)
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [createdTracker, setCreatedTracker] = useState<{ id: string; title: string } | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const sendTextRef = useRef<(text: string, history: ChatMessageModel[]) => Promise<void>>(
@@ -112,9 +117,12 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
       setDraft('')
       setError(null)
       setNotice(null)
+      setCreatedTracker(null)
       setLoading(true)
       setMessages([...nextHistory, assistantMessage])
 
+      let streamed = ''
+      let savedTracker = false
       try {
         await streamChatCompletion(
           {
@@ -131,7 +139,15 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
                 )
               }
             },
+            onTracker: (payload) => {
+              const tracker = addTracker(payload)
+              if (tracker) {
+                savedTracker = true
+                setCreatedTracker({ id: tracker.id, title: tracker.title })
+              }
+            },
             onDelta: (delta) => {
+              streamed += delta
               setMessages((current) =>
                 current.map((item) =>
                   item.id === assistantMessage.id
@@ -142,6 +158,13 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
             },
           },
         )
+        if (!savedTracker) {
+          const fallback = buildTrackerEvent(trimmed, streamed)
+          if (fallback) {
+            const tracker = addTracker(fallback)
+            if (tracker) setCreatedTracker({ id: tracker.id, title: tracker.title })
+          }
+        }
       } catch (caught) {
         if (controller.signal.aborted && !timedOut) return
         const message = timedOut
@@ -156,7 +179,7 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
         if (!controller.signal.aborted || timedOut) setLoading(false)
       }
     },
-    [loading, token, userContext],
+    [loading, token, userContext, addTracker],
   )
 
   sendTextRef.current = sendText
@@ -283,6 +306,15 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
       {notice && !error && (
         <div className="chat-notice" role="status">
           <p>{notice}</p>
+        </div>
+      )}
+
+      {createdTracker && !error && (
+        <div className="chat-tracker-banner" role="status">
+          <p>
+            Sena saved <strong>{createdTracker.title}</strong> as a live tracker.
+          </p>
+          <Link to={`/trackers/${createdTracker.id}`}>Open tracker</Link>
         </div>
       )}
 

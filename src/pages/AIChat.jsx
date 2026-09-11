@@ -1,7 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
-import Sidebar from '../components/layout/Sidebar'
 import ChatCore from '../components/chat/ChatCore'
-import './AIChat.css'
+import { PageShell } from '../components/ui/PageShell'
 
 /**
  * Dedicated full-screen AI Coach page for longer coaching sessions.
@@ -11,12 +10,11 @@ function AIChat() {
   const initialPrompt = params.get('prompt') || ''
 
   return (
-    <div className="ai-page">
-      <Sidebar />
-      <main className="ai-main">
+    <PageShell flush>
+      <div className="flex min-h-0 w-full flex-1 justify-center">
         <ChatCore variant="page" initialPrompt={initialPrompt} />
-      </main>
-    </div>
+      </div>
+    </PageShell>
   )
 }
 

@@ -37,12 +37,19 @@ export interface ChatRequest {
 
 export type ChatProvider = 'gemini' | 'openai' | 'local'
 
+/** Structured action plan Sena can persist as a dashboard tracker. */
+export interface ChatTrackerPayload {
+  title: string
+  tasks: string[]
+}
+
 /** One Server-Sent Event from the chat stream. */
 export interface ChatStreamEvent {
   content?: string
   done?: boolean
   error?: string
   provider?: ChatProvider
+  tracker?: ChatTrackerPayload
 }
 
 /**
