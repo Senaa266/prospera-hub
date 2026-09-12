@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useChat } from '../context/ChatContext'
+import { useSusuSecurity } from '../context/SusuSecurityContext'
 import Icon from '../components/icons'
 import DocumentUploadZone from '../components/grants/DocumentUploadZone'
 import { AppButton } from '../components/ui/AppButton'
@@ -110,6 +111,7 @@ function StepRail({ stepIndex }) {
 function GrantEligibility() {
   const { user } = useAuth()
   const { open } = useChat()
+  const { restrictions, settleOpenDeficit } = useSusuSecurity()
   const [stepIndex, setStepIndex] = useState(0)
   const [draft, setDraft] = useState(() => loadEligibilityDraft(user))
   const [formError, setFormError] = useState('')
@@ -182,6 +184,10 @@ function GrantEligibility() {
   }
 
   const goNext = async () => {
+    if (!restrictions.canAccessGrants) {
+      setFormError(restrictions.message)
+      return
+    }
     const error = validateStep(stepIndex)
     if (error) {
       setFormError(error)
@@ -231,6 +237,22 @@ function GrantEligibility() {
           </AppButton>
         }
       />
+
+      {!restrictions.canAccessGrants ? (
+        <div className="mb-6 flex flex-wrap items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900" role="alert">
+          <Icon name="shield" size={18} />
+          <div className="min-w-0 flex-1">
+            <p className="m-0 font-bold">Grants locked by susu deficit</p>
+            <p className="mb-0 mt-1 leading-6">{restrictions.message}</p>
+          </div>
+          <AppButton variant="danger" className="text-xs" onClick={settleOpenDeficit}>
+            Settle deficit
+          </AppButton>
+          <AppButton as={Link} to="/savings" variant="outline" className="text-xs">
+            Open savings
+          </AppButton>
+        </div>
+      ) : null}
 
       <StepRail stepIndex={stepIndex} />
 

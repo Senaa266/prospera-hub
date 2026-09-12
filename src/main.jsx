@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext'
 import { ChatProvider } from './context/ChatContext'
 import { PreferencesProvider } from './context/PreferencesContext'
 import { TrackersProvider } from './context/TrackersContext'
+import { SusuSecurityProvider } from './context/SusuSecurityContext'
 import { ErrorBoundary } from './components/ui/ErrorBoundary'
 
 createRoot(document.getElementById('root')).render(
@@ -16,9 +17,11 @@ createRoot(document.getElementById('root')).render(
         <AuthProvider>
           <PreferencesProvider>
             <TrackersProvider>
-              <ChatProvider>
-                <App />
-              </ChatProvider>
+              <SusuSecurityProvider>
+                <ChatProvider>
+                  <App />
+                </ChatProvider>
+              </SusuSecurityProvider>
             </TrackersProvider>
           </PreferencesProvider>
         </AuthProvider>

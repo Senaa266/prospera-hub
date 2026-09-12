@@ -3,10 +3,13 @@ import { Link } from 'react-router-dom'
 import Icon from '../components/icons'
 import AIOffer from '../components/AIOffer'
 import ContributePaymentModal from '../components/savings/ContributePaymentModal'
+import StandingOrderModal from '../components/savings/StandingOrderModal'
+import { SusuSecurityOverview } from '../components/savings/SusuSecurityPanel'
 import { AppButton } from '../components/ui/AppButton'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PageShell } from '../components/ui/PageShell'
+import { useSusuSecurity } from '../context/SusuSecurityContext'
 import { GROUPS, PERSONAL_GOALS, fmt, getJoined, setJoined } from '../data/savings'
 import './Feature.css'
 
@@ -37,10 +40,20 @@ function Savings() {
   const [payCircle, setPayCircle] = useState(null)
   const [extras, setExtras] = useState({})
   const [editGoal, setEditGoal] = useState(null)
+  const [mandateOpen, setMandateOpen] = useState(false)
+  const [joinError, setJoinError] = useState('')
+  const { restrictions, enableMandate, personalWallet } = useSusuSecurity()
 
   const myGroups = GROUPS.filter((g) => joined.includes(g.id))
+  const mandateCircle = myGroups[0] || GROUPS[0]
 
   const toggleJoin = (id) => {
+    setJoinError('')
+    if (!joined.includes(id) && !restrictions.canJoinSavingsCircle) {
+      setJoinError(restrictions.message)
+      setTab('mine')
+      return
+    }
     const next = joined.includes(id) ? joined.filter((x) => x !== id) : [...joined, id]
     setJoinedState(next)
     setJoined(next)
@@ -75,9 +88,9 @@ function Savings() {
   const groupTotal = myGroups.reduce((sum, g) => sum + (g.youSaved || 0) + (extras[g.id] || 0), 0)
 
   const stats = [
-    { icon: 'wallet', label: 'Total saved', value: fmt(groupTotal + personalTotal), cap: '+GH₵ 480 this month', hue: 'pink' },
+    { icon: 'wallet', label: 'Total saved', value: fmt(groupTotal + personalTotal), cap: `Wallets ${fmt(personalWallet)}`, hue: 'pink' },
     { icon: 'users', label: 'Active circles', value: String(myGroups.length), cap: 'Groups + personal combined', hue: 'blue' },
-    { icon: 'target', label: 'Personal goals', value: String(goals.length), cap: 'All on track', hue: 'green' },
+    { icon: 'shield', label: 'Protection', value: restrictions.canJoinSavingsCircle ? 'Clear' : 'Restricted', cap: 'Hit-and-run engine', hue: 'green' },
     { icon: 'trend', label: 'On-time streak', value: myGroups.length > 0 ? '4 weeks' : '—', cap: 'Longest run yet', hue: 'yellow' },
   ]
 
@@ -86,8 +99,16 @@ function Savings() {
       <PageHeader
         title="Susu"
         accent="Savings"
-        subtitle="Group circles with full transparency, plus personal goals you control. Contributions are demo-confirmed locally (no live debit)."
+        subtitle="Group circles with zero-loss default protection, standing orders, and trust-based payout priority. Contributions are demo-confirmed locally."
       />
+
+        <SusuSecurityOverview onOpenMandate={() => setMandateOpen(true)} />
+
+        {joinError ? (
+          <p className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800" role="alert">
+            {joinError}
+          </p>
+        ) : null}
 
         <div className="sav-stats">
           {stats.map((s) => (
@@ -444,6 +465,15 @@ function Savings() {
               [payCircle.id]: (current[payCircle.id] || 0) + amount,
             }))
           }}
+        />
+
+        <StandingOrderModal
+          open={mandateOpen}
+          onClose={() => setMandateOpen(false)}
+          circleId={mandateCircle.id}
+          circleName={mandateCircle.name}
+          weekly={mandateCircle.weekly}
+          onSave={enableMandate}
         />
 
         <Modal
