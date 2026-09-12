@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Icon from '../components/icons'
 import AIOffer from '../components/AIOffer'
 import GrantCard from '../components/GrantCard'
+import { AppButton } from '../components/ui/AppButton'
 import { EmptyState } from '../components/ui/EmptyState'
 import { GrantSkeleton } from '../components/ui/Skeleton'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -95,10 +97,16 @@ function Grants() {
         accent="& Funding"
         subtitle="Live opportunities from external funding sources. Filter, save and check fit."
         actions={
-          <span className="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-muted shadow-[var(--shadow-card)]">
-            <span className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-            {live ? 'Live · from the web' : 'Demo data'}
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <AppButton as={Link} to="/grants/eligibility" variant="dark">
+              Check eligibility
+              <Icon name="shield" size={15} />
+            </AppButton>
+            <span className="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-muted shadow-[var(--shadow-card)]">
+              <span className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+              {live ? 'Live · from the web' : 'Demo data'}
+            </span>
+          </div>
         }
       />
 

@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import AIChat from './pages/AIChat'
 import Grants from './pages/Grants'
+import GrantEligibility from './pages/GrantEligibility'
 import Savings from './pages/Savings'
 import SavingsDetail from './pages/SavingsDetail'
 import TrackerDetail from './pages/TrackerDetail'
@@ -54,6 +55,14 @@ function App() {
           element={
             <RequireAuth>
               <Grants />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/grants/eligibility"
+          element={
+            <RequireAuth>
+              <GrantEligibility />
             </RequireAuth>
           }
         />

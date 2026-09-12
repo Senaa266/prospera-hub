@@ -21,6 +21,7 @@ function Sidebar() {
         { to: '/savings', icon: 'wallet', label: 'Savings' },
         { to: '/finance', icon: 'chart', label: 'Finance' },
         { to: '/grants', icon: 'target', label: 'Grants' },
+        { to: '/grants/eligibility', icon: 'shield', label: 'Eligibility' },
       ],
     },
     {
@@ -51,6 +52,7 @@ function Sidebar() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/grants' || item.to === '/dashboard'}
                 className={({ isActive }) => `side-link ${isActive ? 'active' : ''}`}
               >
                 <span className="side-icon">
