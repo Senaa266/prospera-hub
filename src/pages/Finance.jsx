@@ -59,7 +59,10 @@ function Finance() {
         <AppButton variant="dark" onClick={() => setShowForm((value) => !value)}>
           + Add transaction
         </AppButton>
-        <AppButton variant="outline" onClick={() => open('Write a financial report from my logged sales and expenses.')}>
+        <AppButton
+          variant="outline"
+          onClick={() => open('Write a financial report from my logged sales and expenses.')}
+        >
           <Icon name="sparkles" size={16} />
           AI financial report
         </AppButton>
@@ -70,39 +73,54 @@ function Finance() {
           onSubmit={addEntry}
           className="mb-5 grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-[var(--shadow-card)] sm:grid-cols-4"
         >
-          <input
-            type="date"
-            required
-            value={draft.date}
-            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-            className="rounded-xl border border-line px-3 py-2.5"
-          />
-          <select
-            value={draft.type}
-            onChange={(e) => setDraft({ ...draft, type: e.target.value })}
-            className="rounded-xl border border-line px-3 py-2.5"
-          >
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
-          </select>
-          <input
-            required
-            placeholder="Description"
-            value={draft.desc}
-            onChange={(e) => setDraft({ ...draft, desc: e.target.value })}
-            className="rounded-xl border border-line px-3 py-2.5"
-          />
-          <div className="flex gap-2">
+          <label className="grid gap-1 text-xs font-semibold text-muted">
+            Date
+            <input
+              type="date"
+              required
+              value={draft.date}
+              onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+              className="rounded-xl border border-line px-3 py-2.5 text-sm text-ink"
+            />
+          </label>
+          <label className="grid gap-1 text-xs font-semibold text-muted">
+            Type
+            <select
+              value={draft.type}
+              onChange={(e) => setDraft({ ...draft, type: e.target.value })}
+              className="rounded-xl border border-line px-3 py-2.5 text-sm text-ink"
+            >
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs font-semibold text-muted">
+            Description
             <input
               required
-              type="number"
-              min="1"
-              placeholder="GH₵"
-              value={draft.amount}
-              onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
-              className="min-w-0 flex-1 rounded-xl border border-line px-3 py-2.5"
+              placeholder="Necklace sales"
+              value={draft.desc}
+              onChange={(e) => setDraft({ ...draft, desc: e.target.value })}
+              className="rounded-xl border border-line px-3 py-2.5 text-sm text-ink"
             />
-            <AppButton type="submit">Save</AppButton>
+          </label>
+          <div className="grid gap-1">
+            <label className="text-xs font-semibold text-muted" htmlFor="finance-amount">
+              Amount (GH₵)
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="finance-amount"
+                required
+                type="number"
+                min="1"
+                placeholder="450"
+                value={draft.amount}
+                onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
+                className="min-w-0 flex-1 rounded-xl border border-line px-3 py-2.5 text-sm text-ink"
+              />
+              <AppButton type="submit">Save</AppButton>
+            </div>
           </div>
         </form>
       )}
@@ -119,7 +137,7 @@ function Finance() {
           </thead>
           <tbody>
             {entries.map((e, i) => (
-              <tr key={`${e.date}-${e.desc}-${i}`} className="border-b border-line last:border-0 transition hover:bg-canvas">
+              <tr key={`${e.date}-${e.desc}-${i}`} className="border-b border-line last:border-0 hover:bg-canvas">
                 <td className="px-4 py-3">{e.date}</td>
                 <td className="px-4 py-3">
                   <span
@@ -144,7 +162,7 @@ function Finance() {
         <h4 className="m-0 text-ink-strong">AI financial advice</h4>
         <p className="mb-0 mt-2 text-sm leading-6 text-muted">
           After you log more sales, Sena can draft a statement and flag spending patterns. Ask for a
-          90-day cash plan and she will also save a tracker on your dashboard.
+          90-day cash plan when you are ready.
         </p>
       </AppCard>
     </PageShell>

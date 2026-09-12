@@ -191,7 +191,7 @@ export function ContributePaymentModal({
                 setProviderId(provider.id)
                 setStep('details')
               }}
-              className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3 text-left transition hover:-translate-y-0.5 hover:border-ink-strong"
+              className="flex items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3 text-left transition hover:-translate-y-0.5 hover:border-ink-strong"
             >
               <span
                 className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl text-xs font-extrabold ${provider.tone}`}

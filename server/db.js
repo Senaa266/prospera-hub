@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS supplier_groups (
   solo_price REAL,
   group_price REAL,
   min_orders INTEGER,
+  max_units INTEGER,
   status TEXT DEFAULT 'open',
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -186,6 +187,7 @@ for (const [table, column, ddl] of [
   ['supplier_orders', 'host', 'ALTER TABLE supplier_orders ADD COLUMN host INTEGER DEFAULT 0'],
   ['supplier_orders', 'status', "ALTER TABLE supplier_orders ADD COLUMN status TEXT DEFAULT 'active'"],
   ['supplier_orders', 'note', 'ALTER TABLE supplier_orders ADD COLUMN note TEXT'],
+  ['supplier_groups', 'max_units', 'ALTER TABLE supplier_groups ADD COLUMN max_units INTEGER'],
   ['savings_circles', 'description', "ALTER TABLE savings_circles ADD COLUMN description TEXT DEFAULT ''"],
   ['savings_circles', 'weekly', 'ALTER TABLE savings_circles ADD COLUMN weekly REAL DEFAULT 200'],
   ['savings_circles', 'cycle_len', "ALTER TABLE savings_circles ADD COLUMN cycle_len TEXT DEFAULT 'weekly'"],
@@ -227,11 +229,11 @@ function seedIfEmpty() {
 
 if (count('supplier_groups') === 0) {
     const ins = db.prepare(
-      `INSERT INTO supplier_groups (product, supplier, category, unit, description, solo_price, group_price, min_orders, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO supplier_groups (product, supplier, category, unit, description, solo_price, group_price, min_orders, max_units, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     for (const s of SUPPLIERS) {
-      ins.run(s.product, s.supplier, s.category, s.unit, s.description, s.solo_price, s.group_price, s.min_orders, s.status)
+      ins.run(s.product, s.supplier, s.category, s.unit, s.description, s.solo_price, s.group_price, s.min_orders, s.max_units ?? null, s.status)
     }
   }
 
@@ -247,7 +249,7 @@ function seedDemoSupplierOrders() {
   const seeded = db.prepare(`SELECT COUNT(*) AS n FROM meta WHERE key = 'supplier_orders_seeded'`).get().n
   if (seeded > 0) return
   const skip = ['Beads & accessories', 'Fabric (Ankara / Kente)', 'Packaging materials', 'Shea soap base & oils']
-  const groups = db.prepare('SELECT id, product, min_orders FROM supplier_groups ORDER BY id').all()
+  const groups = db.prepare('SELECT id, product, min_orders, max_units FROM supplier_groups ORDER BY id').all()
   if (groups.length === 0) return
   const ins = db.prepare(
     'INSERT OR IGNORE INTO supplier_orders (group_id, user_id, qty) VALUES (?, ?, 1)'
@@ -255,7 +257,8 @@ function seedDemoSupplierOrders() {
   let userId = -100
   for (const g of groups) {
     if (skip.includes(g.product)) continue
-    const base = Math.min(g.min_orders - 1, Math.floor(g.min_orders * 0.7))
+    const threshold = g.max_units ?? g.min_orders ?? 1
+    const base = Math.min(threshold - 1, Math.floor(threshold * 0.7))
     for (let i = 1; i <= base; i += 1) {
       ins.run(g.id, userId)
       userId -= 1
@@ -268,17 +271,17 @@ seedDemoSupplierOrders()
 
 function syncSupplierCatalog() {
   const upd = db.prepare(
-    `UPDATE supplier_groups SET category = ?, unit = ?, description = ?
+    `UPDATE supplier_groups SET category = ?, unit = ?, description = ?, max_units = ?
      WHERE product = ? AND supplier = ?`
   )
   const ins = db.prepare(
-    `INSERT INTO supplier_groups (product, supplier, category, unit, description, solo_price, group_price, min_orders, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO supplier_groups (product, supplier, category, unit, description, solo_price, group_price, min_orders, max_units, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
   for (const s of SUPPLIERS) {
-    const info = upd.run(s.category, s.unit, s.description, s.product, s.supplier)
+    const info = upd.run(s.category, s.unit, s.description, s.max_units ?? null, s.product, s.supplier)
     if (info.changes === 0) {
-      ins.run(s.product, s.supplier, s.category, s.unit, s.description, s.solo_price, s.group_price, s.min_orders, s.status)
+      ins.run(s.product, s.supplier, s.category, s.unit, s.description, s.solo_price, s.group_price, s.min_orders, s.max_units ?? null, s.status)
     }
   }
 }
@@ -339,26 +342,26 @@ function seedDemoCollabs() {
     ins.run(beads, demoUserId(), 2, 1, 'active', 'We already sell bead jewellery — happy to lead.')
     ins.run(beads, -1, 1, 0, 'active', 'Ok — I can take 1 bag, say 50/50?')
     ins.run(beads, -2, 2, 0, 'pending', 'Can I take 2 bags? I will split equally.')
-    msg.run(beads, 'supplier', null, 'supplier', 'Kantamanto Wholesale rep', 'Stock is ready. Once your group confirms, I will hold the GH₵24 rate for 7 days.')
+    msg.run(beads, 'supplier', null, 'supplier', 'Kantamanto Wholesale rep', 'Your group is past the cap of 2 bags — the GH₵24 rate is live. I will hold it for 7 days.')
     msg.run(beads, 'team', -1, 'buyer', 'Kofi Mensah', 'Two of us on the beads so far.')
   }
   if (fabric) {
     ins.run(fabric, -1, 3, 1, 'active', 'Leading this order.')
     ins.run(fabric, -2, 2, 0, 'active', 'Taking 2 yards for uniforms.')
     ins.run(fabric, -3, 2, 0, 'active', '2 yards for my tailoring shop.')
-    msg.run(fabric, 'team', -1, 'buyer', 'Kofi Mensah', 'Three of us in — 7 yards committed.')
-    msg.run(fabric, 'team', -2, 'buyer', 'Ama Asante', '1 more yard and we unlock the GH₵48 rate.')
-    msg.run(fabric, 'supplier', null, 'supplier', 'Opera Market Suppliers rep', 'Hi team. When you reach 8 yards, I will hold the group price for 10 days.')
+    msg.run(fabric, 'team', -3, 'buyer', 'Esi Owusu', 'Seven yards total — past the 6-yard cap, so the GH₵48 rate is live.')
+    msg.run(fabric, 'team', -2, 'buyer', 'Ama Asante', 'Good — combined units cleared the cap, rate locked in.')
+    msg.run(fabric, 'supplier', null, 'supplier', 'Opera Market Suppliers rep', 'Hi team. You have cleared the 6-yard cap — I will hold the group price for 10 days.')
   }
   if (pack) {
     ins.run(pack, -3, 10, 1, 'active', 'Leading the packaging run.')
     ins.run(pack, -4, 6, 0, 'active', 'In for 6 units.')
-    msg.run(pack, 'supplier', null, 'supplier', 'ChinaAgent-GH rep', 'Confirm the plain kraft style and I will start the production run at 20 units.')
-    msg.run(pack, 'team', -4, 'buyer', 'Yaw Boateng', '16 of 20 locked in — almost there.')
+    msg.run(pack, 'supplier', null, 'supplier', 'ChinaAgent-GH rep', 'Confirm the plain kraft style and I will start the production run — you are past the 15-unit cap.')
+    msg.run(pack, 'team', -4, 'buyer', 'Yaw Boateng', '16 units in — past the 15-unit cap, so the group price is live.')
   }
   if (soap) {
     ins.run(soap, -2, 4, 1, 'active', 'Hosting this one.')
-    msg.run(soap, 'supplier', null, 'supplier', 'Akyem Soapworks rep', 'Raw shea is in stock. Happy to hold 10kg for your group.')
+    msg.run(soap, 'supplier', null, 'supplier', 'Akyem Soapworks rep', 'Raw shea is in stock. Pass the 10kg cap with more buyers and I will hold the group rate.')
   }
 
   db.prepare(`INSERT INTO meta (key, value) VALUES ('supplier_collab_seeded', '1')`).run()
@@ -366,6 +369,21 @@ function seedDemoCollabs() {
 
 seedDemoCollabs()
 ensureDemoHost()
+
+function syncSupplierSeedCopy() {
+  const swaps = [
+    ['Stock is ready. Once your group confirms, I will hold the GH₵24 rate for 7 days.', 'Your group is past the cap of 2 bags — the GH₵24 rate is live. I will hold it for 7 days.'],
+    ['Hi team. When you reach 8 yards, I will hold the group price for 10 days.', 'Hi team. You have cleared the 6-yard cap — I will hold the group price for 10 days.'],
+    ['1 more yard and we unlock the GH₵48 rate.', 'Good — combined units cleared the cap, rate locked in.'],
+    ['Confirm the plain kraft style and I will start the production run at 20 units.', 'Confirm the plain kraft style and I will start the production run — you are past the 15-unit cap.'],
+    ['16 of 20 locked in — almost there.', '16 units in — past the 15-unit cap, so the group price is live.'],
+    ['Raw shea is in stock. Happy to hold 10kg for your group.', 'Raw shea is in stock. Pass the 10kg cap with more buyers and I will hold the group rate.'],
+  ]
+  const upd = db.prepare('UPDATE supplier_thread SET message = ? WHERE message = ?')
+  for (const [from, to] of swaps) upd.run(to, from)
+}
+
+syncSupplierSeedCopy()
 
 const SAVING_META = {
   'Ayah Susu Circle': { weekly: 200, cycle_len: 'weekly', pot: 12800, description: 'Neighbourhood traders pooling weekly for predictable lump sums.' },

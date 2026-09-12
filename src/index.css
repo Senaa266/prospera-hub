@@ -23,11 +23,53 @@
     box-sizing: border-box;
   }
 
+  :root {
+    --app-wallpaper: none;
+  }
+
+  html[data-theme='dark'] {
+    --color-ink: #e8e8ef;
+    --color-ink-strong: #f5f5fa;
+    --color-muted: #a4a4b3;
+    --color-line: #343442;
+    --color-canvas: #121218;
+    --color-card: #1c1c26;
+    --shadow-card: 0 4px 14px rgb(0 0 0 / 0.28);
+    --shadow-card-hover: 0 12px 28px rgb(0 0 0 / 0.4);
+  }
+
+  html[data-large-text='true'] {
+    font-size: 112.5%;
+  }
+
+  html[data-high-contrast='true'] {
+    --color-line: #b8b8c4;
+    --color-muted: #4a4a55;
+  }
+
+  html[data-theme='dark'][data-high-contrast='true'] {
+    --color-line: #6a6a78;
+    --color-muted: #c8c8d4;
+  }
+
+  html[data-reduce-motion='true'] *,
+  html[data-reduce-motion='true'] *::before,
+  html[data-reduce-motion='true'] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   body {
     margin: 0;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    background: var(--color-canvas);
+    background-color: var(--color-canvas);
+    background-image: var(--app-wallpaper);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: cover;
     color: var(--color-ink);
   }
 
@@ -40,11 +82,36 @@
   input,
   select {
     font-family: inherit;
+    color: inherit;
+  }
+
+  input,
+  textarea,
+  select {
+    background-color: var(--color-card);
+    color: var(--color-ink);
+    border-color: var(--color-line);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-muted);
   }
 
   :focus-visible {
     outline: 2px solid var(--color-brand-indigo);
     outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .app-shell,
+  .app-main {
+    background-color: var(--color-canvas);
+    background-image: var(--app-wallpaper);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: cover;
   }
 }
 
@@ -58,6 +125,18 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 }
 

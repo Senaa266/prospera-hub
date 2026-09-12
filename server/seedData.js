@@ -287,6 +287,7 @@ export const SUPPLIERS = [
     solo_price: 35,
     group_price: 24,
     min_orders: 5,
+    max_units: 2,
     status: 'open',
   },
   {
@@ -298,6 +299,7 @@ export const SUPPLIERS = [
     solo_price: 65,
     group_price: 48,
     min_orders: 8,
+    max_units: 6,
     status: 'open',
   },
   {

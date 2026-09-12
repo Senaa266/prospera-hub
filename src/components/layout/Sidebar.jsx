@@ -63,7 +63,9 @@ function Sidebar() {
     <aside className="sidebar">
       <Link to="/dashboard" className="sidebar-logo">
         <span className="logo-mark">P</span>
-        <span className="logo-text">Prospera<span className="hub">Hub</span></span>
+        <span className="logo-text">
+          Prospera<span className="hub">Hub</span>
+        </span>
       </Link>
 
       <nav className="sidebar-nav">
@@ -102,14 +104,18 @@ function Sidebar() {
       </Link>
 
       <div className="sidebar-profile">
-        <div className="profile-avatar">{firstName[0]}</div>
+        {user?.avatar ? (
+          <img className="profile-avatar profile-avatar-img" src={user.avatar} alt="" />
+        ) : (
+          <div className="profile-avatar">{firstName[0]}</div>
+        )}
         <div className="profile-meta">
           <strong>{user?.name || 'Demo Entrepreneur'}</strong>
-          <span>{user?.businessType || 'Entrepreneur'}</span>
+          <span>{user?.businessName || user?.businessType || 'Entrepreneur'}</span>
         </div>
-        <button className="profile-menu" type="button" aria-label="Settings">
+        <Link to="/settings" className="profile-menu" aria-label="Open settings">
           <Icon name="gear" size={18} />
-        </button>
+        </Link>
       </div>
     </aside>
   )
