@@ -73,7 +73,7 @@
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  color: #5c5c68;
+  color: #8a8a96;
   padding: 0 10px;
   margin-bottom: 6px;
   font-weight: 600;
@@ -221,8 +221,8 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  background: #ffffff;
-  border: 1px solid #ececf2;
+  background: var(--color-card, #ffffff);
+  border: 1px solid var(--color-line, #ececf2);
   border-radius: 14px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
 }
@@ -232,14 +232,19 @@
   height: 42px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f10178, #be004c);
+  background: linear-gradient(135deg, var(--color-prospera, #f10178), var(--color-prospera-dark, #be004c));
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   color: #fff;
   font-size: 1.1rem;
-  box-shadow: 0 0 0 2px rgba(241, 1, 120, 0.45);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-prospera, #f10178) 45%, transparent);
+}
+
+.profile-avatar-img {
+  object-fit: cover;
+  padding: 0;
 }
 
 .profile-meta {
@@ -251,7 +256,7 @@
 
 .profile-meta strong {
   font-size: 0.88rem;
-  color: #16161c;
+  color: var(--color-ink, #16161c);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -259,7 +264,7 @@
 
 .profile-meta span {
   font-size: 0.75rem;
-  color: #6f6f7c;
+  color: var(--color-muted, #6f6f7c);
   margin-top: 2px;
 }
 
@@ -276,6 +281,7 @@
   align-items: center;
   justify-content: center;
   transition: color 0.2s, background 0.2s;
+  text-decoration: none;
 }
 
 .profile-menu:hover {

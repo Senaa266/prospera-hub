@@ -27,6 +27,14 @@ export function AuthProvider({ children }) {
     persistSession(session)
   }
 
+  const updateUser = (patch) => {
+    setUser((current) => {
+      const next = { ...(current || {}), ...patch }
+      localStorage.setItem('user', JSON.stringify(next))
+      return next
+    })
+  }
+
   const logout = () => {
     setToken(null)
     setUser(null)
@@ -35,7 +43,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, login, register, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   )

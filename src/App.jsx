@@ -10,6 +10,7 @@ import TrackerDetail from './pages/TrackerDetail'
 import Suppliers from './pages/Suppliers'
 import SupplierDetail from './pages/SupplierDetail'
 import Finance from './pages/Finance'
+import Settings from './pages/Settings'
 import ChatLauncher from './components/chat/ChatLauncher'
 import { useAuth } from './context/AuthContext'
 
@@ -91,6 +92,14 @@ function App() {
           element={
             <RequireAuth>
               <Finance />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RequireAuth>
+              <Settings />
             </RequireAuth>
           }
         />

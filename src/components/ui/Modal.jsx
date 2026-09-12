@@ -66,7 +66,7 @@ export function Modal({ open, title, onClose, children, wide = false }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`relative z-[81] max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-6 shadow-2xl animate-page-in sm:rounded-3xl ${
+        className={`relative z-[81] max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-line bg-card p-6 text-ink shadow-2xl animate-page-in sm:rounded-3xl ${
           wide ? 'sm:max-w-xl' : 'sm:max-w-lg'
         }`}
       >
