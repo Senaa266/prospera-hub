@@ -17,10 +17,10 @@ function Sidebar() {
     {
       label: 'Business tools',
       items: [
-        { to: '/grants', icon: 'target', label: 'Grants', badge: '4' },
-        { to: '/savings', icon: 'wallet', label: 'Savings' },
         { to: '/suppliers', icon: 'users', label: 'Suppliers' },
+        { to: '/savings', icon: 'wallet', label: 'Savings' },
         { to: '/finance', icon: 'chart', label: 'Finance' },
+        { to: '/grants', icon: 'target', label: 'Grants', badge: '4' },
       ],
     },
     {
