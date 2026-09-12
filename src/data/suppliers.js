@@ -177,6 +177,10 @@ export function saveSupplierState(state) {
   localStorage.setItem(STATE_KEY, JSON.stringify(state))
 }
 
+export function getSupplier(id) {
+  return SUPPLIERS.find((item) => item.id === id) || null
+}
+
 export function statusTone(status) {
   if (status === 'Delivered' || status === 'Fulfilled') return 'bg-emerald-50 text-emerald-800'
   if (status === 'In transit' || status === 'Processing') return 'bg-indigo-50 text-indigo-800'

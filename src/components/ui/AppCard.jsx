@@ -1,3 +1,6 @@
+/**
+ * Elevated surface used for stats, lists, and feature panels.
+ */
 export function AppCard({ as: Tag = 'div', className = '', children, ...props }) {
   return (
     <Tag

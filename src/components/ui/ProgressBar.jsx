@@ -1,3 +1,6 @@
+/**
+ * Accessible progress track used on Dashboard trackers and savings cards.
+ */
 export function ProgressBar({ value = 0, label, className = '' }) {
   const pct = Math.max(0, Math.min(100, Number(value) || 0))
   return (
@@ -11,7 +14,7 @@ export function ProgressBar({ value = 0, label, className = '' }) {
         aria-label={label}
       >
         <div
-          className="h-full rounded-full bg-gradient-to-r from-prospera to-brand-indigo transition-[width] duration-500"
+          className="h-full rounded-full bg-gradient-to-r from-prospera to-brand-indigo transition-[width] duration-500 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>

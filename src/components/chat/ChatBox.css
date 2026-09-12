@@ -237,6 +237,42 @@
   margin: 0;
 }
 
+.chat-notice {
+  margin: 0 20px 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.82rem;
+}
+
+.chat-notice p {
+  margin: 0;
+}
+
+.chat-tracker-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 20px 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fde7f2;
+  color: #9f1239;
+  font-size: 0.85rem;
+}
+
+.chat-tracker-banner p {
+  margin: 0;
+}
+
+.chat-tracker-banner a {
+  flex-shrink: 0;
+  color: #be004c;
+  font-weight: 700;
+}
+
 .chat-retry-btn {
   flex-shrink: 0;
   border: 0;

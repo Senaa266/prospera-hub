@@ -95,12 +95,14 @@
   font-size: 0.93rem;
   font-weight: 500;
   cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
   transition: background 0.18s, color 0.18s;
 }
 
 .side-link:hover {
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
+  transform: translateX(2px);
 }
 
 .side-icon {

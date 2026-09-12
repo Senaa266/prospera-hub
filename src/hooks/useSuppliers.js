@@ -6,6 +6,9 @@ function persist(next) {
   return next
 }
 
+/**
+ * Shared supplier list mutations (joins, stock requests, messages, needs).
+ */
 export function useSuppliers() {
   const [state, setState] = useState(loadSupplierState)
 
@@ -88,5 +91,14 @@ export function useSuppliers() {
     return need
   }, [])
 
-  return { suppliers, requests: state.requests, messages: state.messages, needs: state.needs, joinOrder, requestStock, sendMessage, addNeed }
+  return {
+    suppliers,
+    requests: state.requests,
+    messages: state.messages,
+    needs: state.needs,
+    joinOrder,
+    requestStock,
+    sendMessage,
+    addNeed,
+  }
 }

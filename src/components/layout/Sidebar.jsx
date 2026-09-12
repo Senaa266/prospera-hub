@@ -1,31 +1,38 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTrackers } from '../../context/TrackersContext'
 import Icon from '../icons'
 import './Sidebar.css'
 
-const NAV_GROUPS = [
-  {
-    label: 'Overview',
-    items: [{ to: '/dashboard', icon: 'home', label: 'Dashboard' }],
-  },
-  {
-    label: 'Business tools',
-    items: [
-      { to: '/grants', icon: 'target', label: 'Grants', badge: '4' },
-      { to: '/savings', icon: 'wallet', label: 'Savings' },
-      { to: '/suppliers', icon: 'users', label: 'Suppliers' },
-      { to: '/finance', icon: 'chart', label: 'Finance' },
-    ],
-  },
-  {
-    label: 'Assistant',
-    items: [{ to: '/ai-chat', icon: 'sparkles', label: 'AI Coach', badge: 'NEW', new: true }],
-  },
-]
-
 function Sidebar() {
   const { user } = useAuth()
+  const { trackers } = useTrackers()
   const firstName = (user?.name || 'Entrepreneur').split(' ')[0]
+  const latestTracker = trackers[0]
+  const navGroups = [
+    {
+      label: 'Overview',
+      items: [{ to: '/dashboard', icon: 'home', label: 'Dashboard' }],
+    },
+    {
+      label: 'Business tools',
+      items: [
+        { to: '/suppliers', icon: 'users', label: 'Suppliers' },
+        { to: '/savings', icon: 'wallet', label: 'Savings' },
+        { to: '/finance', icon: 'chart', label: 'Finance' },
+        { to: '/grants', icon: 'target', label: 'Grants', badge: '4' },
+      ],
+    },
+    {
+      label: 'Assistant',
+      items: [
+        { to: '/ai-chat', icon: 'sparkles', label: 'AI Coach', badge: 'NEW', new: true },
+        ...(latestTracker
+          ? [{ to: `/trackers/${latestTracker.id}`, icon: 'check', label: 'Plans', badge: String(trackers.length) }]
+          : []),
+      ],
+    },
+  ]
 
   return (
     <aside className="sidebar">
@@ -35,7 +42,7 @@ function Sidebar() {
       </Link>
 
       <nav className="sidebar-nav">
-        {NAV_GROUPS.map((group) => (
+        {navGroups.map((group) => (
           <div className="nav-group" key={group.label}>
             <span className="nav-caption">{group.label}</span>
             {group.items.map((item) => (

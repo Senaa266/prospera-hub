@@ -33,6 +33,9 @@ function findProvider(id) {
   return null
 }
 
+/**
+ * Multi-step contribute flow for susu circles (demo confirmation, no live rails).
+ */
 export function ContributePaymentModal({
   open,
   onClose,
@@ -80,7 +83,8 @@ export function ContributePaymentModal({
     if (!amountOk || !referenceOk) return
     setBusy(true)
     await new Promise((resolve) => window.setTimeout(resolve, 700))
-    setReceipt(`PH-${Date.now().toString().slice(-6)}`)
+    const code = `PH-${Date.now().toString().slice(-6)}`
+    setReceipt(code)
     setBusy(false)
     setStep('success')
     onSuccess?.(parsedAmount)
@@ -91,8 +95,8 @@ export function ContributePaymentModal({
       {step === 'method' && (
         <div className="grid gap-3">
           <p className="m-0 text-sm text-muted">
-            Choose how you want to send this week&apos;s contribution. You will confirm the amount
-            before anything is recorded.
+            Choose how you want to send this week&apos;s contribution. You will confirm the
+            amount before anything is recorded.
           </p>
           {METHODS.map((item) => (
             <button
@@ -132,7 +136,7 @@ export function ContributePaymentModal({
               >
                 {provider.name.slice(0, 3).toUpperCase()}
               </span>
-              <span>
+              <span className="min-w-0">
                 <strong className="block text-ink-strong">{provider.name}</strong>
                 <span className="text-sm text-muted">{provider.blurb}</span>
               </span>
@@ -162,9 +166,10 @@ export function ContributePaymentModal({
             <input
               type="number"
               min="1"
+              step="1"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="rounded-xl border border-line px-3 py-2.5 text-base"
+              className="rounded-xl border border-line bg-white px-3 py-2.5 text-base font-medium text-ink"
               required
             />
           </label>
@@ -176,7 +181,7 @@ export function ContributePaymentModal({
               placeholder={selected.method.id === 'momo' ? '024 XXX XXXX' : 'Account number'}
               value={reference}
               onChange={(event) => setReference(event.target.value)}
-              className="rounded-xl border border-line px-3 py-2.5 text-base"
+              className="rounded-xl border border-line bg-white px-3 py-2.5 text-base font-medium text-ink"
               required
             />
           </label>

@@ -1,5 +1,8 @@
 import { useEffect, useId, useRef } from 'react'
 
+/**
+ * Accessible overlay used for payments and confirmations.
+ */
 export function Modal({ open, title, onClose, children, wide = false }) {
   const titleId = useId()
   const panelRef = useRef(null)
@@ -9,9 +12,10 @@ export function Modal({ open, title, onClose, children, wide = false }) {
     if (!open) return undefined
     lastFocus.current = document.activeElement
     const node = panelRef.current
-    node
-      ?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
-      ?.focus()
+    const focusable = node?.querySelector(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    )
+    focusable?.focus()
 
     const onKey = (event) => {
       if (event.key === 'Escape') {
@@ -25,7 +29,7 @@ export function Modal({ open, title, onClose, children, wide = false }) {
           'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         ),
       ]
-      if (!items.length) return
+      if (items.length === 0) return
       const first = items[0]
       const last = items[items.length - 1]
       if (event.shiftKey && document.activeElement === first) {
@@ -38,11 +42,11 @@ export function Modal({ open, title, onClose, children, wide = false }) {
     }
 
     document.addEventListener('keydown', onKey)
-    const previous = document.body.style.overflow
+    const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = previous
+      document.body.style.overflow = previousOverflow
       if (lastFocus.current instanceof HTMLElement) lastFocus.current.focus()
     }
   }, [open, onClose])
@@ -50,10 +54,10 @@ export function Modal({ open, title, onClose, children, wide = false }) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-6">
       <button
         type="button"
-        className="absolute inset-0 border-0 bg-ink/45 backdrop-blur-[2px]"
+        className="absolute inset-0 border-0 bg-ink/45 backdrop-blur-[2px] transition-opacity"
         aria-label="Close dialog"
         onClick={onClose}
       />
@@ -73,7 +77,7 @@ export function Modal({ open, title, onClose, children, wide = false }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-line bg-canvas px-2.5 py-1.5 text-sm font-semibold text-muted hover:text-ink"
+            className="rounded-xl border border-line bg-canvas px-2.5 py-1.5 text-sm font-semibold text-muted transition hover:border-ink hover:text-ink"
           >
             Close
           </button>

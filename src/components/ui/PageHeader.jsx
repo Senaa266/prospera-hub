@@ -1,3 +1,6 @@
+/**
+ * Consistent page title block used across product surfaces.
+ */
 export function PageHeader({ title, accent, subtitle, actions }) {
   return (
     <header className="mb-7 flex flex-wrap items-start justify-between gap-5">

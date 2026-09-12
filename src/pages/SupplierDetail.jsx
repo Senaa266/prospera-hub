@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import {
-  ContactSupplierModal,
-  JoinOrderModal,
-  OrderHistoryModal,
-  RequestStockModal,
-} from '../components/suppliers/SupplierActions'
+import Icon from '../components/icons'
+import ContactSupplierModal from '../components/suppliers/ContactSupplierModal'
+import JoinOrderModal from '../components/suppliers/JoinOrderModal'
+import OrderHistoryModal from '../components/suppliers/OrderHistoryModal'
+import RequestStockModal from '../components/suppliers/RequestStockModal'
 import { AppButton } from '../components/ui/AppButton'
 import { AppCard } from '../components/ui/AppCard'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -18,18 +17,21 @@ function SupplierDetail() {
   const { id } = useParams()
   const { suppliers, joinOrder, requestStock, sendMessage } = useSuppliers()
   const supplier = suppliers.find((item) => item.id === id)
-  const [joinOpen, setJoinOpen] = useState(false)
-  const [stockSku, setStockSku] = useState('')
-  const [contactOpen, setContactOpen] = useState(false)
-  const [historyOpen, setHistoryOpen] = useState(false)
+  const [modal, setModal] = useState('')
+  const [requestSku, setRequestSku] = useState('')
 
   if (!supplier) {
     return (
       <PageShell>
-        <PageHeader title="Supplier" accent="not found" subtitle="That desk is not in the network yet." />
-        <AppButton as={Link} to="/suppliers" variant="outline">
-          ← All suppliers
-        </AppButton>
+        <Link to="/suppliers" className="mb-4 inline-flex text-sm font-semibold text-muted no-underline hover:text-ink">
+          ← Back to suppliers
+        </Link>
+        <AppCard className="text-center">
+          <p className="m-0 font-semibold text-ink-strong">We could not find that supplier.</p>
+          <AppButton as={Link} to="/suppliers" className="mt-4">
+            Browse suppliers
+          </AppButton>
+        </AppCard>
       </PageShell>
     )
   }
@@ -37,124 +39,137 @@ function SupplierDetail() {
   const pct = Math.min(100, Math.round((supplier.currentOrders / supplier.minOrders) * 100))
 
   return (
-    <PageShell wide>
-      <AppButton as={Link} to="/suppliers" variant="ghost" className="mb-4 px-0 hover:bg-transparent">
+    <PageShell>
+      <Link to="/suppliers" className="mb-4 inline-flex text-sm font-semibold text-muted no-underline hover:text-ink">
         ← All suppliers
-      </AppButton>
-
+      </Link>
       <PageHeader
         title={supplier.name}
-        accent={supplier.discount}
         subtitle={`${supplier.category} · ${supplier.region}`}
         actions={
           <>
-            <AppButton onClick={() => setJoinOpen(true)}>Join this order</AppButton>
-            <AppButton variant="outline" onClick={() => setStockSku(supplier.catalog[0]?.sku || '')}>
-              Request stock
-            </AppButton>
-            <AppButton variant="ghost" onClick={() => setContactOpen(true)}>
+            <AppButton onClick={() => setModal('request')}>Request stock</AppButton>
+            <AppButton variant="outline" onClick={() => setModal('contact')}>
               Contact
             </AppButton>
-            <AppButton variant="ghost" onClick={() => setHistoryOpen(true)}>
+            <AppButton variant="ghost" onClick={() => setModal('history')}>
               Order history
             </AppButton>
           </>
         }
       />
 
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <AppCard>
           <span className="text-sm text-muted">Contact</span>
-          <strong className="mt-1 block text-ink-strong">{supplier.contactName}</strong>
-          <a className="mt-1 block text-sm font-semibold text-prospera no-underline" href={`tel:${supplier.phone}`}>
+          <strong className="mt-1 block">{supplier.contactName}</strong>
+          <a className="text-sm font-semibold text-prospera" href={`tel:${supplier.phone}`}>
             {supplier.phone}
-          </a>
-          <a className="block text-sm text-muted no-underline hover:text-prospera" href={`mailto:${supplier.email}`}>
-            {supplier.email}
           </a>
         </AppCard>
         <AppCard>
           <span className="text-sm text-muted">Location</span>
-          <strong className="mt-1 block text-ink-strong">{supplier.address}</strong>
-          <p className="mb-0 mt-1 text-sm text-muted">{supplier.hours}</p>
+          <strong className="mt-1 block">{supplier.address}</strong>
+          <span className="text-sm text-muted">{supplier.region}</span>
         </AppCard>
         <AppCard>
           <span className="text-sm text-muted">Delivery</span>
-          <strong className="mt-1 block text-ink-strong">{supplier.delivery}</strong>
-          <p className="mb-0 mt-1 text-sm text-muted">Lead time: {supplier.leadTime}</p>
+          <strong className="mt-1 block">{supplier.delivery}</strong>
+          <span className="text-sm text-muted">{supplier.leadTime}</span>
         </AppCard>
         <AppCard>
-          <span className="text-sm text-muted">Group buy</span>
-          <strong className="mt-1 block text-ink-strong">
-            {supplier.currentOrders}/{supplier.minOrders}
-          </strong>
-          <ProgressBar value={pct} label={`${supplier.name} fill`} className="mt-2" />
-          <p className="mb-0 mt-2 text-sm text-muted">{supplier.moqNote}</p>
+          <span className="text-sm text-muted">Reliability</span>
+          <strong className="mt-1 block">{supplier.rating} / 5</strong>
+          <span className="text-sm text-muted">{supplier.fulfilled} fulfilled orders</span>
         </AppCard>
       </section>
 
-      <AppCard className="mb-6">
-        <h2 className="mb-1 mt-0 text-lg font-bold">Catalog & MOQ</h2>
-        <p className="mb-4 mt-0 text-sm text-muted">
-          Rated {supplier.rating} · {supplier.fulfilled} fulfilled orders
-        </p>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-line text-muted">
-                <th className="py-2 pr-3 font-semibold">SKU</th>
-                <th className="py-2 pr-3 font-semibold">Item</th>
-                <th className="py-2 pr-3 font-semibold">Solo</th>
-                <th className="py-2 pr-3 font-semibold">Group</th>
-                <th className="py-2 pr-3 font-semibold">MOQ</th>
-                <th className="py-2 font-semibold"> </th>
-              </tr>
-            </thead>
-            <tbody>
-              {supplier.catalog.map((row) => (
-                <tr key={row.sku} className="border-b border-line last:border-0">
-                  <td className="py-2.5 pr-3 font-mono text-xs">{row.sku}</td>
-                  <td className="py-2.5 pr-3">{row.name}</td>
-                  <td className="py-2.5 pr-3">GH₵ {row.price}</td>
-                  <td className="py-2.5 pr-3 font-semibold text-prospera-dark">GH₵ {row.groupPrice}</td>
-                  <td className="py-2.5 pr-3">
-                    {row.moq} {row.unit}
-                  </td>
-                  <td className="py-2.5">
-                    <AppButton variant="outline" className="px-3 py-1.5 text-xs" onClick={() => setStockSku(row.sku)}>
-                      Request
-                    </AppButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <AppCard className="mb-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="m-0 text-lg font-bold">Open group buy</h2>
+            <p className="mb-0 mt-1 text-sm text-muted">
+              {supplier.currentOrders}/{supplier.minOrders} committed · {supplier.moqNote}
+            </p>
+          </div>
+          <span className="rounded-full bg-prospera-soft px-3 py-1 text-xs font-bold text-prospera-dark">
+            Save {supplier.discount}
+          </span>
         </div>
+        <ProgressBar value={pct} label={`${supplier.name} group buy`} className="mb-4" />
+        <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
+          <div className="rounded-xl bg-canvas px-3 py-2">
+            Solo <strong className="block">{supplier.soloPrice}</strong>
+          </div>
+          <div className="rounded-xl bg-prospera-soft/70 px-3 py-2">
+            Group <strong className="block">{supplier.groupPrice}</strong>
+          </div>
+        </div>
+        <AppButton onClick={() => setModal('join')}>Join this order</AppButton>
       </AppCard>
 
-      <AppCard className="overflow-x-auto p-0">
-        <div className="flex items-center justify-between px-5 pt-5">
-          <h2 className="m-0 text-lg font-bold">Fulfillment log</h2>
-          <AppButton variant="ghost" onClick={() => setHistoryOpen(true)}>
-            Full history
-          </AppButton>
-        </div>
-        <table className="mt-3 w-full border-collapse text-left text-sm">
+      <h2 className="mb-3 text-lg font-bold text-ink-strong">Catalog</h2>
+      <div className="mb-6 overflow-x-auto rounded-2xl border border-line bg-white shadow-[var(--shadow-card)]">
+        <table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-line text-muted">
-              <th className="px-5 py-2 font-semibold">Date</th>
-              <th className="px-5 py-2 font-semibold">Item</th>
-              <th className="px-5 py-2 font-semibold">Amount</th>
-              <th className="px-5 py-2 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">SKU</th>
+              <th className="px-4 py-3 font-semibold">Item</th>
+              <th className="px-4 py-3 font-semibold">Solo</th>
+              <th className="px-4 py-3 font-semibold">Group</th>
+              <th className="px-4 py-3 font-semibold">MOQ</th>
+              <th className="px-4 py-3 font-semibold"> </th>
             </tr>
           </thead>
           <tbody>
-            {supplier.history.slice(0, 6).map((row) => (
+            {supplier.catalog.map((row) => (
+              <tr key={row.sku} className="border-b border-line last:border-0 hover:bg-canvas">
+                <td className="px-4 py-3 font-mono text-xs">{row.sku}</td>
+                <td className="px-4 py-3">
+                  {row.name}
+                  <span className="block text-xs text-muted">per {row.unit}</span>
+                </td>
+                <td className="px-4 py-3">GH₵ {row.price}</td>
+                <td className="px-4 py-3 font-semibold text-prospera-dark">GH₵ {row.groupPrice}</td>
+                <td className="px-4 py-3">{row.moq}</td>
+                <td className="px-4 py-3">
+                  <AppButton
+                    variant="outline"
+                    className="!px-3 !py-1.5 text-xs"
+                    onClick={() => {
+                      setRequestSku(row.sku)
+                      setModal('request')
+                    }}
+                  >
+                    Request
+                  </AppButton>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="mb-3 text-lg font-bold text-ink-strong">Fulfillment log</h2>
+      <AppCard className="overflow-x-auto p-0">
+        <table className="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-line text-muted">
+              <th className="px-4 py-3 font-semibold">Date</th>
+              <th className="px-4 py-3 font-semibold">Reference</th>
+              <th className="px-4 py-3 font-semibold">Item</th>
+              <th className="px-4 py-3 font-semibold">Amount</th>
+              <th className="px-4 py-3 font-semibold">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {supplier.history.map((row) => (
               <tr key={row.id} className="border-b border-line last:border-0">
-                <td className="px-5 py-2.5">{row.date}</td>
-                <td className="px-5 py-2.5">{row.item}</td>
-                <td className="px-5 py-2.5">{row.amount ? `GH₵ ${row.amount}` : '—'}</td>
-                <td className="px-5 py-2.5">
+                <td className="px-4 py-3">{row.date}</td>
+                <td className="px-4 py-3 font-mono text-xs">{row.id}</td>
+                <td className="px-4 py-3">{row.item}</td>
+                <td className="px-4 py-3">{row.amount ? `GH₵ ${row.amount}` : '—'}</td>
+                <td className="px-4 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusTone(row.status)}`}>
                     {row.status}
                   </span>
@@ -165,21 +180,34 @@ function SupplierDetail() {
         </table>
       </AppCard>
 
-      <JoinOrderModal open={joinOpen} supplier={supplier} onClose={() => setJoinOpen(false)} onJoin={joinOrder} />
-      <RequestStockModal
-        open={Boolean(stockSku)}
+      <p className="mt-4 text-sm text-muted">
+        <Icon name="clock" size={14} /> Hours {supplier.hours} · Email{' '}
+        <a href={`mailto:${supplier.email}`}>{supplier.email}</a>
+      </p>
+
+      <JoinOrderModal
+        open={modal === 'join'}
         supplier={supplier}
-        initialSku={stockSku}
-        onClose={() => setStockSku('')}
+        onClose={() => setModal('')}
+        onJoin={joinOrder}
+      />
+      <RequestStockModal
+        open={modal === 'request'}
+        supplier={supplier}
+        initialSku={requestSku}
+        onClose={() => {
+          setModal('')
+          setRequestSku('')
+        }}
         onSubmit={requestStock}
       />
       <ContactSupplierModal
-        open={contactOpen}
+        open={modal === 'contact'}
         supplier={supplier}
-        onClose={() => setContactOpen(false)}
+        onClose={() => setModal('')}
         onSend={sendMessage}
       />
-      <OrderHistoryModal open={historyOpen} supplier={supplier} onClose={() => setHistoryOpen(false)} />
+      <OrderHistoryModal open={modal === 'history'} supplier={supplier} onClose={() => setModal('')} />
     </PageShell>
   )
 }
