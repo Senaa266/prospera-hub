@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import Sidebar from '../components/layout/Sidebar'
 import Icon from '../components/icons'
 import AIOffer from '../components/AIOffer'
+import ContributePaymentModal from '../components/savings/ContributePaymentModal'
+import { AppButton } from '../components/ui/AppButton'
+import { Modal } from '../components/ui/Modal'
+import { PageHeader } from '../components/ui/PageHeader'
+import { PageShell } from '../components/ui/PageShell'
 import { GROUPS, PERSONAL_GOALS, fmt, getJoined, setJoined } from '../data/savings'
 import './Feature.css'
 
@@ -30,6 +34,9 @@ function Savings() {
   const [goals, setGoals] = useState(PERSONAL_GOALS)
   const [showForm, setShowForm] = useState(false)
   const [draft, setDraft] = useState({ name: '', target: '', weekly: '' })
+  const [payCircle, setPayCircle] = useState(null)
+  const [extras, setExtras] = useState({})
+  const [editGoal, setEditGoal] = useState(null)
 
   const myGroups = GROUPS.filter((g) => joined.includes(g.id))
 
@@ -65,7 +72,7 @@ function Savings() {
   }
 
   const personalTotal = goals.reduce((sum, g) => sum + g.saved, 0)
-  const groupTotal = myGroups.reduce((sum, g) => sum + (g.youSaved || 0), 0)
+  const groupTotal = myGroups.reduce((sum, g) => sum + (g.youSaved || 0) + (extras[g.id] || 0), 0)
 
   const stats = [
     { icon: 'wallet', label: 'Total saved', value: fmt(groupTotal + personalTotal), cap: '+GH₵ 480 this month', hue: 'pink' },
@@ -75,17 +82,12 @@ function Savings() {
   ]
 
   return (
-    <div className="feature-page">
-      <Sidebar />
-      <main className="feature-main">
-        <div className="dash-header">
-          <div>
-            <h1 className="greeting">
-              Susu <span className="greet-name">Savings</span>
-            </h1>
-            <p className="feature-sub">Group circles with full transparency, plus personal goals you control.</p>
-          </div>
-        </div>
+    <PageShell>
+      <PageHeader
+        title="Susu"
+        accent="Savings"
+        subtitle="Group circles with full transparency, plus personal goals you control."
+      />
 
         <div className="sav-stats">
           {stats.map((s) => (
@@ -178,7 +180,7 @@ function Savings() {
                     <div className="gc-saved-row">
                       <span>
                         <Icon name="wallet" size={14} />
-                        You've saved <strong>{fmt(g.youSaved || 0)}</strong>
+                        You've saved <strong>{fmt((g.youSaved || 0) + (extras[g.id] || 0))}</strong>
                       </span>
                       <span className={`life-pill ${g.streak !== '—' ? 'on' : 'off'}`}>
                         <Icon name={g.streak !== '—' ? 'check' : 'x'} size={12} />
@@ -193,9 +195,9 @@ function Savings() {
                       Payout {g.nextPayout} · {g.cycle}
                     </span>
                     <div className="gc-btns">
-                      <Link to={`/savings/${g.id}`} className="btn-join">
+                      <button type="button" className="btn-join" onClick={() => setPayCircle(g)}>
                         Contribute
-                      </Link>
+                      </button>
                       <Link to={`/savings/${g.id}`} className="btn-outline-dark">
                         View group
                       </Link>
@@ -303,7 +305,7 @@ function Savings() {
                         <button type="button" className="btn-join" onClick={() => topUp(g.id)}>
                           Top up
                         </button>
-                        <button type="button" className="btn-outline-dark">
+                        <button type="button" className="btn-outline-dark" onClick={() => setEditGoal({ ...g })}>
                           Edit
                         </button>
                       </div>
@@ -429,8 +431,85 @@ function Savings() {
           text="Ask your AI coach to build a savings plan, estimate your next payout, or check how healthy a circle is."
           points={['Savings plan', 'Payout estimates', 'Circle health']}
         />
-      </main>
-    </div>
+
+        <ContributePaymentModal
+          open={Boolean(payCircle)}
+          circleName={payCircle?.name || 'this circle'}
+          defaultAmount={payCircle?.weekly || 200}
+          onClose={() => setPayCircle(null)}
+          onSuccess={(amount) => {
+            if (!payCircle) return
+            setExtras((current) => ({
+              ...current,
+              [payCircle.id]: (current[payCircle.id] || 0) + amount,
+            }))
+          }}
+        />
+
+        <Modal
+          open={Boolean(editGoal)}
+          title={editGoal ? `Edit ${editGoal.name}` : 'Edit goal'}
+          onClose={() => setEditGoal(null)}
+        >
+          {editGoal ? (
+            <form
+              className="grid gap-4"
+              onSubmit={(event) => {
+                event.preventDefault()
+                const target = Number(editGoal.target)
+                const weekly = Number(editGoal.weekly)
+                if (!editGoal.name || !target || !weekly) return
+                setGoals((current) =>
+                  current.map((goal) =>
+                    goal.id === editGoal.id
+                      ? { ...goal, name: editGoal.name, target, weekly, tag: editGoal.tag || goal.tag }
+                      : goal,
+                  ),
+                )
+                setEditGoal(null)
+              }}
+            >
+              <label className="grid gap-1.5 text-sm font-semibold">
+                Goal name
+                <input
+                  value={editGoal.name}
+                  onChange={(e) => setEditGoal({ ...editGoal, name: e.target.value })}
+                  className="rounded-xl border border-line px-3 py-2.5"
+                  required
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-semibold">
+                Target (GH₵)
+                <input
+                  type="number"
+                  min="1"
+                  value={editGoal.target}
+                  onChange={(e) => setEditGoal({ ...editGoal, target: e.target.value })}
+                  className="rounded-xl border border-line px-3 py-2.5"
+                  required
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-semibold">
+                Save per week (GH₵)
+                <input
+                  type="number"
+                  min="1"
+                  value={editGoal.weekly}
+                  onChange={(e) => setEditGoal({ ...editGoal, weekly: e.target.value })}
+                  className="rounded-xl border border-line px-3 py-2.5"
+                  required
+                />
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <AppButton type="submit">Save changes</AppButton>
+                <AppButton variant="outline" onClick={() => setEditGoal(null)}>
+                  Cancel
+                </AppButton>
+              </div>
+            </form>
+          ) : null}
+        </Modal>
+      </PageShell>
   )
 }
 

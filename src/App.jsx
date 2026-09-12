@@ -7,6 +7,7 @@ import Grants from './pages/Grants'
 import Savings from './pages/Savings'
 import SavingsDetail from './pages/SavingsDetail'
 import Suppliers from './pages/Suppliers'
+import SupplierDetail from './pages/SupplierDetail'
 import Finance from './pages/Finance'
 import ChatLauncher from './components/chat/ChatLauncher'
 import { useAuth } from './context/AuthContext'
@@ -73,6 +74,14 @@ function App() {
           element={
             <RequireAuth>
               <Suppliers />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/suppliers/:id"
+          element={
+            <RequireAuth>
+              <SupplierDetail />
             </RequireAuth>
           }
         />
