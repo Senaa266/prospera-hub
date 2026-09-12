@@ -7,7 +7,7 @@ import './AIChatOverlay.css'
  * Animated overlay that hosts Sena without leaving the current page.
  */
 export function AIChatModal() {
-  const { isOpen, close, initialPrompt } = useChat()
+  const { isOpen, close, initialPrompt, promptNonce } = useChat()
   const titleId = useId()
   const closeRef = useRef(null)
   const panelRef = useRef(null)
@@ -83,6 +83,7 @@ export function AIChatModal() {
           variant="modal"
           titleId={titleId}
           initialPrompt={initialPrompt}
+          promptNonce={promptNonce}
           onClose={close}
           closeRef={closeRef}
         />

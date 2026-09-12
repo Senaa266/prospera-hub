@@ -7,19 +7,22 @@ import { AuthProvider } from './context/AuthContext'
 import { ChatProvider } from './context/ChatContext'
 import { PreferencesProvider } from './context/PreferencesContext'
 import { TrackersProvider } from './context/TrackersContext'
+import { ErrorBoundary } from './components/ui/ErrorBoundary'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <PreferencesProvider>
-          <TrackersProvider>
-            <ChatProvider>
-              <App />
-            </ChatProvider>
-          </TrackersProvider>
-        </PreferencesProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <PreferencesProvider>
+            <TrackersProvider>
+              <ChatProvider>
+                <App />
+              </ChatProvider>
+            </TrackersProvider>
+          </PreferencesProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )

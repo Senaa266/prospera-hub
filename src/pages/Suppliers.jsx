@@ -113,7 +113,7 @@ function Suppliers() {
     }
     return [...list].sort((a, b) => {
       if (sort === 'price') return a.groupPrice - b.groupPrice
-      if (sort === 'progress') return b.committedUnits / b.minOrders - a.committedUnits / a.minOrders
+      if (sort === 'progress') return b.committedUnits / b.unlockGoal - a.committedUnits / a.unlockGoal
       return b.discountPct - a.discountPct
     })
   }, [groups, category, query, sort])
@@ -138,7 +138,7 @@ function Suppliers() {
     let units = 0
     for (const g of myCollabs) {
       if (g.myStatus !== 'active') continue
-      units += Math.max(g.minOrders - g.committedUnits, 0)
+      units += Math.max(g.unlockGoal - g.committedUnits, 0)
     }
     return units
   }, [myCollabs])
@@ -242,9 +242,9 @@ function Suppliers() {
                         ? `${g.pendingCount} request${g.pendingCount === 1 ? '' : 's'} to review`
                         : g.unlocked
                           ? 'Unlocked — confirm the deal'
-                          : `${g.minOrders - g.committedUnits} more unit${
-                              g.minOrders - g.committedUnits === 1 ? '' : 's'
-                            } to unlock`}
+                          : `${Math.max(g.unlockGoal - g.committedUnits, 0)} more unit${
+                              g.unlockGoal - g.committedUnits === 1 ? '' : 's'
+                            } over the cap to unlock`}
                     </span>
                   </div>
                   <span
@@ -337,7 +337,7 @@ function Suppliers() {
         ) : (
           <div className="suppliers-grid">
             {filtered.map((g) => {
-              const pct = Math.min((g.committedUnits / g.minOrders) * 100, 100)
+              const pct = Math.min((g.committedUnits / g.unlockGoal) * 100, 100)
               const cta = g.amSupplier
                 ? 'Manage offer'
                 : g.myStatus === 'pending'
@@ -374,11 +374,11 @@ function Suppliers() {
                   <div className="order-progress">
                     <span>
                       {g.unlocked
-                        ? `${g.committedUnits}/${g.minOrders} units committed — unlocked`
-                        : `${g.committedUnits}/${g.minOrders} units — still ${Math.max(
-                            g.minOrders - g.committedUnits,
+                        ? `${g.committedUnits}/${g.unlockGoal} combined — past the ${g.maxUnits}-unit cap, discount live`
+                        : `${g.committedUnits}/${g.unlockGoal} combined — need ${Math.max(
+                            g.unlockGoal - g.committedUnits,
                             0
-                          )} to unlock`}
+                          )} more over the ${g.maxUnits}-unit cap`}
                     </span>
                     <div className="progress-bar">
                       <div className={g.unlocked ? 'bar-unlocked' : ''} style={{ width: `${pct}%` }} />
@@ -514,7 +514,7 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
     setTimeout(() => setCopied(false), 1600)
   }
 
-  const pct = Math.min((group.committedUnits / group.minOrders) * 100, 100)
+  const pct = Math.min((group.committedUnits / group.unlockGoal) * 100, 100)
   const channelMessages = group.messages.filter((m) => m.channel === channel)
   const isActive = group.myOrder?.status === 'active'
   const pendingMembers = group.members.filter((m) => m.status === 'pending')
@@ -528,7 +528,8 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
             <h2>{group.product}</h2>
             <p>
               {group.supplier} · {formatGH(group.soloPrice)} → {formatGH(group.groupPrice)} /{' '}
-              {group.unit} · save {group.discountPct}%
+              {group.unit} · save {group.discountPct}% once {group.unlockGoal}+{' '}
+              {group.unit === 'yard' ? 'yards' : group.unit + 's'} combined
             </p>
           </div>
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Close">
@@ -552,10 +553,10 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
               <div className="unlock-line">
                 <span>
                   {group.unlocked
-                    ? `Unlocked — group price of ${formatGH(group.groupPrice)} / ${group.unit}`
-                    : `${group.committedUnits}/${group.minOrders} ${
+                    ? `Discount live — past the cap of ${group.maxUnits}, so ${formatGH(group.groupPrice)} / ${group.unit} is billing`
+                    : `${group.committedUnits}/${group.unlockGoal} ${
                         group.unit === 'yard' ? 'yards' : 'units'
-                      } committed`}
+                      } combined — cap is ${group.maxUnits}`}
                 </span>
                 <span className="unlock-pct">{Math.round(pct)}%</span>
               </div>
@@ -568,16 +569,18 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                     ? `The deal is live. Confirm it to bill ${group.activeMembers} buyer${
                         group.activeMembers === 1 ? '' : 's'
                       } at ${formatGH(group.groupPrice)} / ${group.unit} and close the offer.`
-                    : `${Math.max(group.minOrders - group.committedUnits, 0)} more ${
-                        group.unit === 'yard' ? 'yards' : 'units'
-                      } to unlock — share the link or answer buyers in chat.`
+                    : `Price is ${formatGH(group.soloPrice)} / ${group.unit} until combined units exceed the cap of ${group.maxUnits} — need ${Math.max(
+                        group.unlockGoal - group.committedUnits,
+                        0
+                      )} more. Share the link or answer buyers in chat.`
                   : group.unlocked
                     ? `Live. Your share costs ${formatGH(
                         (group.myOrder?.qty || qty) * group.groupPrice
-                      )} — ${formatGH((group.myOrder?.qty || 0) * (group.soloPrice - group.groupPrice))} saved vs buying alone.`
-                    : `${Math.max(group.minOrders - group.committedUnits, 0)} more ${
-                        group.unit === 'yard' ? 'yards' : 'units'
-                      } to unlock — every committed unit lowers the price for everyone.`}
+                      )} — ${formatGH((group.myOrder?.qty || 0) * (group.soloPrice - group.groupPrice))} saved vs retail.`
+                    : `Retail (${formatGH(group.soloPrice)} / ${group.unit}) is billing for now. Need ${Math.max(
+                        group.unlockGoal - group.committedUnits,
+                        0
+                      )} more combined units over the cap of ${group.maxUnits}, then everyone drops to ${formatGH(group.groupPrice)} / ${group.unit}.`}
               </p>
 
               {isSupplier && !fulfilled && (
@@ -589,8 +592,8 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                     onClick={doFulfill}
                   >
                     {group.unlocked
-                      ? 'Confirm order & fulfill'
-                      : `Waiting on ${Math.max(group.minOrders - group.committedUnits, 0)} more units`}
+                      ? 'Confirm order & fulfill at group price'
+                      : `Retail is billing — ${Math.max(group.unlockGoal - group.committedUnits, 0)} more units over the cap`}
                   </button>
                 </div>
               )}
@@ -710,7 +713,7 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                   Tell the supplier how many {group.unit === 'yard' ? 'yards' : 'units'} you need
                   {group.supplierUserId
                     ? ' — they will approve you before the count moves.'
-                    : ' — your units count toward the unlock right away.'}
+                    : ' — your units count toward the combined cap right away.'}
                 </p>
                 <div className="join-controls">
                   <div className="qty-stepper">
@@ -738,13 +741,12 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
 
             {isActive && (
               <div className="share-calc">
-                <span>{group.unlocked ? 'Your cost at group price' : 'Your cost once unlocked'}</span>
+                <span>{group.unlocked ? 'Your cost at the group price' : 'Your cost at retail until combined units exceed the cap'}</span>
                 <strong>
-                  {formatGH(group.myOrder.qty * group.groupPrice)}
-                  <small>
-                    {' '}
-                    (solo: {formatGH(group.myOrder.qty * group.soloPrice)})
-                  </small>
+                  {formatGH(group.myOrder.qty * group.unitPrice)}
+                  {group.unlocked && (
+                    <small> (retail: {formatGH(group.myOrder.qty * group.soloPrice)})</small>
+                  )}
                 </strong>
               </div>
             )}
@@ -761,7 +763,7 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                 <Icon name="sparkles" size={16} />
                 {isSupplier
                   ? 'Drop a message in the chat or share your invite link to bring in the buyers you need.'
-                  : 'Invite a partner or bump your share to cross the unlock line — everyone pays less.'}
+                  : 'Invite a partner or bump your share so combined units exceed the cap — everyone drops to the group price.'}
               </div>
             )}
           </div>

@@ -1,19 +1,38 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
+async function readBody(response) {
+  const text = await response.text()
+  if (!text) return {}
+  try {
+    return JSON.parse(text)
+  } catch {
+    return { message: text.slice(0, 200) || 'Request failed' }
+  }
+}
+
 const client = async (endpoint, { method = 'GET', body, token } = {}) => {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers.Authorization = `Bearer ${token}`
 
-  const response = await fetch(`${API_URL}/api${endpoint}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  let response
+  try {
+    response = await fetch(`${API_URL}/api${endpoint}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    })
+  } catch {
+    throw new Error('Network error. Check your connection and try again.')
+  }
 
-  const data = await response.json()
+  const data = await readBody(response)
 
   if (!response.ok) {
-    throw new Error(data.message || 'Request failed')
+    if (response.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    }
+    throw new Error(data.message || `Request failed (${response.status})`)
   }
 
   return data

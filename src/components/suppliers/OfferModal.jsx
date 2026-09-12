@@ -22,7 +22,7 @@ function OfferModal({ open, onClose, onSubmit }) {
   const [description, setDescription] = useState('')
   const [soloPrice, setSoloPrice] = useState('')
   const [groupPrice, setGroupPrice] = useState('')
-  const [minOrders, setMinOrders] = useState('')
+  const [maxUnits, setMaxUnits] = useState('')
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
 
@@ -30,7 +30,7 @@ function OfferModal({ open, onClose, onSubmit }) {
 
   const solo = Number(soloPrice)
   const group = Number(groupPrice)
-  const min = Number(minOrders || 0)
+  const cap = Number(maxUnits || 0)
   const validPrices = solo > 0 && group > 0 && group < solo
   const savePct = validPrices ? Math.round(((solo - group) / solo) * 100) : 0
 
@@ -45,7 +45,7 @@ function OfferModal({ open, onClose, onSubmit }) {
     if (!(solo > 0)) next.soloPrice = 'Enter a solo price'
     if (!(group > 0)) next.groupPrice = 'Enter a group price'
     if (solo > 0 && group > 0 && group >= solo) next.groupPrice = 'Group price must be lower than solo'
-    if (!(min >= 1)) next.minOrders = 'Minimum units must be 1 or more'
+    if (!(cap >= 1)) next.maxUnits = 'Set a unit cap of 1 or more'
     setErrors(next)
     if (Object.keys(next).length > 0) return
 
@@ -58,7 +58,7 @@ function OfferModal({ open, onClose, onSubmit }) {
         description: description.trim(),
         soloPrice: solo,
         groupPrice: group,
-        minOrders: min,
+        maxUnits: cap,
       })
       onClose()
     } catch (e) {
@@ -75,8 +75,8 @@ function OfferModal({ open, onClose, onSubmit }) {
           <div>
             <h2>List a bulk offer</h2>
             <p>
-              You are the supplier. Other businesses on Prospera will team up to buy from you at
-              your group price.
+              You are the supplier. Businesses will team up to buy from you — your group price kicks
+              in only once their combined units exceed the cap you set. Below it, retail applies.
             </p>
           </div>
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Close">
@@ -152,16 +152,16 @@ function OfferModal({ open, onClose, onSubmit }) {
               {errors.groupPrice && <em>{errors.groupPrice}</em>}
             </label>
             <label className="offer-field">
-              <span>Units to unlock</span>
+              <span>Unit cap for the group price</span>
               <input
                 type="number"
                 min="1"
                 step="1"
-                value={minOrders}
-                onChange={(e) => setMinOrders(e.target.value)}
+                value={maxUnits}
+                onChange={(e) => setMaxUnits(e.target.value)}
                 placeholder="5"
               />
-              {errors.minOrders && <em>{errors.minOrders}</em>}
+              {errors.maxUnits && <em>{errors.maxUnits}</em>}
             </label>
           </div>
 
@@ -169,9 +169,9 @@ function OfferModal({ open, onClose, onSubmit }) {
             <Icon name="target" size={16} />
             <span>
               {validPrices
-                ? `Buyers save ${savePct}% per unit when ${min} units are committed (${fmtGH(
+                ? `Buyers pay retail until combined units exceed ${cap}; then everyone gets the group price (${fmtGH(
                     group
-                  )} vs ${fmtGH(solo)}).`
+                  )}), saving ${savePct}% vs ${fmtGH(solo)}.`
                 : 'Set a group price below the solo price so the deal is worth it.'}
             </span>
           </div>

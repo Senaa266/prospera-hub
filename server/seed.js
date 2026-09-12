@@ -32,11 +32,11 @@ for (const c of SAVING_CIRCLES) {
 }
 
 const insertSupplier = db.prepare(`
-  INSERT INTO supplier_groups (product, supplier, solo_price, group_price, min_orders, status)
-  VALUES (?, ?, ?, ?, ?, ?)
+  INSERT INTO supplier_groups (product, supplier, solo_price, group_price, min_orders, max_units, status)
+  VALUES (?, ?, ?, ?, ?, ?, ?)
 `)
 for (const s of SUPPLIERS) {
-  insertSupplier.run(s.product, s.supplier, s.solo_price, s.group_price, s.min_orders, s.status)
+  insertSupplier.run(s.product, s.supplier, s.solo_price, s.group_price, s.min_orders, s.max_units ?? null, s.status)
 }
 
 const insertTx = db.prepare(`

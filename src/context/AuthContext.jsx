@@ -1,14 +1,27 @@
 import { createContext, useContext, useState } from 'react'
 import { auth } from '../api/client'
 
-const AuthContext = createContext()
+const AuthContext = createContext(null)
+
+function readStoredUser(hasToken) {
+  if (!hasToken) return null
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    localStorage.removeItem('user')
+    localStorage.removeItem('token')
+    return null
+  }
+}
 
 export function AuthProvider({ children }) {
   const storedToken = localStorage.getItem('token')
-  const [token, setToken] = useState(storedToken)
-  const [user, setUser] = useState(() =>
-    storedToken ? JSON.parse(localStorage.getItem('user') || 'null') : null
-  )
+  const initialUser = readStoredUser(Boolean(storedToken))
+  const [token, setToken] = useState(initialUser ? storedToken : null)
+  const [user, setUser] = useState(initialUser)
 
   const persistSession = (session) => {
     setToken(session.token)
@@ -49,4 +62,10 @@ export function AuthProvider({ children }) {
   )
 }
 
-export const useAuth = () => useContext(AuthContext)
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider')
+  }
+  return context
+}

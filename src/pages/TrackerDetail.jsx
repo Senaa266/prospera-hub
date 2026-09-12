@@ -71,7 +71,7 @@ function TrackerDetail() {
       <ul className="m-0 grid list-none gap-3 p-0">
         {tracker.tasks.map((task) => (
           <li key={task.id}>
-            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-white px-4 py-3.5 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]">
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-card px-4 py-3.5 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]">
               <input
                 type="checkbox"
                 checked={task.done}

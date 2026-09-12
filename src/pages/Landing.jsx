@@ -69,6 +69,13 @@ const STEPS = [
 
 const PARTNERS = ['Absa', 'Fidelity', 'GCB', 'MTN MoMo', 'Telecel', 'Impact Hub']
 
+const VALUE_STATS = [
+  { label: 'Grant matches surfaced', value: '120+', hint: 'Across Ghana & beyond' },
+  { label: 'Avg. group-buy savings', value: '28%', hint: 'Vs solo wholesale' },
+  { label: 'Susu circles supported', value: '45+', hint: 'Transparent weekly pays' },
+  { label: 'Sena coaching replies', value: '24/7', hint: 'Plain-language next steps' },
+]
+
 const STORIES = [
   {
     quote:
@@ -217,9 +224,9 @@ function Landing() {
       </header>
 
       <main id="main">
-        <section className="landing-hero relative flex min-h-[calc(100svh-72px)] items-end overflow-hidden md:items-center">
+        <section className="landing-hero relative flex min-h-[calc(100svh-72px)] items-end overflow-hidden md:min-h-[calc(100svh-76px)] md:items-center">
           <div
-            className="absolute inset-0 bg-cover bg-center"
+            className="landing-hero-photo absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage:
                 "url('https://images.unsplash.com/photo-1741085766062-b1a596c6fb91?w=1800&q=80&auto=format&fit=crop')",
@@ -228,24 +235,24 @@ function Landing() {
             aria-label="Entrepreneurs collaborating in a bright business space"
           />
           <div className="landing-hero-veil absolute inset-0" aria-hidden="true" />
-          <div className="relative z-10 mx-auto w-full max-w-[1200px] px-5 pb-16 pt-24 md:px-8 md:pb-24 md:pt-20">
-            <p className="landing-fade mb-3 text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
-              Prospera
+          <div className="relative z-10 mx-auto w-full max-w-[1200px] px-5 pb-20 pt-28 md:px-8 md:pb-28 md:pt-24">
+            <p className="landing-fade landing-brand-mark m-0">
+              Prospera<span>Hub</span>
             </p>
-            <h1 className="landing-fade landing-fade-delay-1 m-0 max-w-3xl text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">
-              Build your business with clarity, capital, and community.
+            <h1 className="landing-fade landing-fade-delay-1 landing-hero-title m-0 max-w-[15ch]">
+              Small businesses.
+              <span> Bigger opportunities.</span>
             </h1>
-            <p className="landing-fade landing-fade-delay-2 mb-8 mt-5 max-w-xl text-base leading-7 text-white/85 sm:text-lg">
-              Grants, transparent susu savings, peer supplier discounts, and Sena — an AI coach for African
-              women entrepreneurs.
+            <p className="landing-fade landing-fade-delay-2 landing-hero-copy mb-9 mt-6 max-w-[34rem]">
+              Find grants. Save with transparent susu. Buy stock together. Grow with Sena, your AI business coach.
             </p>
-            <div className="landing-fade landing-fade-delay-3 flex flex-wrap gap-3">
+            <div className="landing-fade landing-fade-delay-3 flex flex-wrap items-center gap-3">
               <Link to={startTo} className="landing-hero-primary no-underline">
-                Get started
+                Start your business
                 <Icon name="arrowRight" size={17} />
               </Link>
               <button type="button" className="landing-hero-secondary" onClick={() => scrollToId('features')}>
-                See how it works
+                Explore Prospera
               </button>
             </div>
           </div>
@@ -254,9 +261,9 @@ function Landing() {
         <section className="border-b border-line bg-white" aria-label="Partners and trust">
           <div className="mx-auto flex max-w-[1200px] flex-col gap-5 px-5 py-8 md:flex-row md:items-center md:justify-between md:px-8">
             <p className="m-0 text-sm font-semibold text-muted">Trusted payment rails & partner networks</p>
-            <ul className="m-0 flex list-none flex-wrap items-center gap-x-6 gap-y-3 p-0">
+            <ul className="m-0 flex list-none flex-wrap items-center gap-x-2 gap-y-2 p-0">
               {PARTNERS.map((name) => (
-                <li key={name} className="text-sm font-bold tracking-wide text-ink/55">
+                <li key={name} className="landing-partner-chip text-sm font-bold tracking-wide text-ink/55">
                   {name}
                 </li>
               ))}
@@ -264,7 +271,29 @@ function Landing() {
           </div>
         </section>
 
-        <section id="features" className="scroll-mt-24 px-5 py-20 md:px-8">
+        <section className="overflow-x-clip border-b border-line bg-canvas px-5 py-14 md:px-8" aria-label="Value propositions">
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mx-auto mb-8 max-w-2xl text-center">
+              <h2 className="m-0 text-2xl font-bold tracking-tight text-ink-strong md:text-3xl">
+                Built for the next sale — not another dashboard
+              </h2>
+              <p className="mb-0 mt-3 text-sm leading-6 text-muted md:text-base md:leading-7">
+                Funding clarity, trustworthy savings, peer wholesale power, and a coach that keeps you moving.
+              </p>
+            </div>
+            <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4">
+              {VALUE_STATS.map((stat) => (
+                <li key={stat.label} className="landing-stat">
+                  <p className="m-0 text-2xl font-extrabold tracking-tight text-prospera md:text-3xl">{stat.value}</p>
+                  <p className="mb-0 mt-2 text-sm font-bold text-ink-strong">{stat.label}</p>
+                  <p className="mb-0 mt-1 text-xs text-muted">{stat.hint}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section id="features" className="scroll-mt-24 overflow-x-clip px-5 py-20 md:px-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mx-auto mb-12 max-w-2xl text-center">
               <h2 className="m-0 text-3xl font-bold tracking-tight text-ink-strong md:text-4xl">
@@ -274,20 +303,20 @@ function Landing() {
                 One workspace for funding, savings, coaching, and bulk buying — built for women who sell every day.
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((feature) => (
                 <article
                   key={feature.title}
-                  className="group rounded-2xl border border-line bg-white p-6 shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:border-prospera/40 hover:shadow-[var(--shadow-card-hover)]"
+                  className="landing-lift landing-lift-feature group rounded-2xl border border-line bg-white p-6 shadow-[var(--shadow-card)]"
                 >
-                  <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-prospera-soft text-prospera">
+                  <div className="landing-lift-icon mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-prospera-soft text-prospera">
                     <Icon name={feature.icon} size={20} />
                   </div>
                   <h3 className="m-0 text-lg font-bold text-ink-strong">{feature.title}</h3>
                   <p className="mb-5 mt-2 text-sm leading-6 text-muted">{feature.desc}</p>
                   <Link
                     to={token ? feature.to : '/login'}
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-prospera no-underline group-hover:gap-2.5"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-prospera no-underline transition-all duration-300 group-hover:gap-2.5"
                   >
                     {feature.cta}
                     <Icon name="arrowRight" size={15} />
@@ -298,7 +327,7 @@ function Landing() {
           </div>
         </section>
 
-        <section id="how" className="scroll-mt-24 border-y border-line bg-prospera-soft/40 px-5 py-20 md:px-8">
+        <section id="how" className="scroll-mt-24 overflow-x-clip border-y border-line bg-prospera-soft/40 px-5 py-20 md:px-8">
           <div className="mx-auto max-w-[1100px]">
             <div className="mx-auto mb-12 max-w-2xl text-center">
               <h2 className="m-0 text-3xl font-bold tracking-tight text-ink-strong md:text-4xl">How it works</h2>
@@ -308,8 +337,11 @@ function Landing() {
             </div>
             <ol className="m-0 grid list-none gap-6 p-0 md:grid-cols-3">
               {STEPS.map((step) => (
-                <li key={step.n} className="rounded-2xl bg-white/80 p-6 text-center shadow-[var(--shadow-card)]">
-                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-prospera text-sm font-bold text-white">
+                <li
+                  key={step.n}
+                  className="landing-lift landing-lift-step rounded-2xl bg-white/80 p-6 text-center shadow-[var(--shadow-card)]"
+                >
+                  <span className="landing-lift-icon inline-flex h-12 w-12 items-center justify-center rounded-full bg-prospera text-sm font-bold text-white">
                     {step.n}
                   </span>
                   <h3 className="mb-2 mt-4 text-lg font-bold text-ink-strong">{step.title}</h3>
@@ -320,7 +352,7 @@ function Landing() {
           </div>
         </section>
 
-        <section id="stories" className="scroll-mt-24 px-5 py-20 md:px-8">
+        <section id="stories" className="scroll-mt-24 overflow-x-clip px-5 py-20 md:px-8">
           <div className="mx-auto max-w-[1200px]">
             <div className="mx-auto mb-12 max-w-2xl text-center">
               <h2 className="m-0 text-3xl font-bold tracking-tight text-ink-strong md:text-4xl">
@@ -330,14 +362,14 @@ function Landing() {
                 Simulated stories inspired by traders who need tools that respect their time and cash flow.
               </p>
             </div>
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-5 lg:grid-cols-3">
               {STORIES.map((story) => (
                 <figure
                   key={story.name}
-                  className="m-0 rounded-2xl border border-line bg-white p-6 shadow-[var(--shadow-card)]"
+                  className="landing-lift landing-lift-story m-0 rounded-2xl border border-line bg-white p-6 shadow-[var(--shadow-card)]"
                 >
                   <blockquote className="m-0 text-base leading-7 text-ink">“{story.quote}”</blockquote>
-                  <figcaption className="mt-5 border-t border-line pt-4">
+                  <figcaption className="mt-5 border-t border-line pt-4 transition-colors duration-300">
                     <p className="m-0 font-bold text-ink-strong">{story.name}</p>
                     <p className="mb-0 mt-1 text-sm text-muted">{story.role}</p>
                   </figcaption>
@@ -347,7 +379,7 @@ function Landing() {
           </div>
         </section>
 
-        <section className="px-5 pb-20 md:px-8">
+        <section className="overflow-x-clip px-5 pb-20 md:px-8">
           <div className="landing-final mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-8 overflow-hidden rounded-[28px] px-8 py-12 text-white md:flex-row md:items-center md:px-12">
             <div className="max-w-xl">
               <h2 className="m-0 text-3xl font-bold tracking-tight md:text-4xl">Ready when your next sale is.</h2>

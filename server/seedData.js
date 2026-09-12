@@ -311,6 +311,7 @@ export const SUPPLIERS = [
     solo_price: 12,
     group_price: 8,
     min_orders: 20,
+    max_units: 15,
     status: 'open',
   },
   {
@@ -322,6 +323,7 @@ export const SUPPLIERS = [
     solo_price: 45,
     group_price: 33,
     min_orders: 10,
+    max_units: 10,
     status: 'open',
   },
   {
@@ -333,6 +335,7 @@ export const SUPPLIERS = [
     solo_price: 210,
     group_price: 168,
     min_orders: 12,
+    max_units: 12,
     status: 'open',
   },
   {
@@ -344,6 +347,7 @@ export const SUPPLIERS = [
     solo_price: 18,
     group_price: 13,
     min_orders: 15,
+    max_units: 15,
     status: 'open',
   },
   {
@@ -355,6 +359,7 @@ export const SUPPLIERS = [
     solo_price: 55,
     group_price: 41,
     min_orders: 6,
+    max_units: 6,
     status: 'open',
   },
   {
@@ -366,6 +371,7 @@ export const SUPPLIERS = [
     solo_price: 95,
     group_price: 74,
     min_orders: 9,
+    max_units: 9,
     status: 'open',
   },
 ]

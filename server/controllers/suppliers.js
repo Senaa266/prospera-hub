@@ -67,6 +67,8 @@ function toDirectory(g, viewerId) {
   const myOrder = members.find((m) => m.user_id === viewerId)
   const amSupplier = Boolean(g.supplier_user_id && g.supplier_user_id === viewerId)
   const pending = members.filter((m) => m.status === 'pending')
+  const cap = g.max_units ?? g.min_orders ?? 1
+  const unlocked = total > cap
   return {
     id: g.id,
     product: g.product,
@@ -78,13 +80,16 @@ function toDirectory(g, viewerId) {
     description: g.description || '',
     soloPrice: g.solo_price,
     groupPrice: g.group_price,
-    minOrders: g.min_orders,
+    minOrders: cap,
+    maxUnits: cap,
+    unlockGoal: cap + 1,
     discountPct: discountPct(g.solo_price, g.group_price),
     committedUnits: total,
     activeMembers: members.filter((m) => m.status === 'active').length,
     pendingCount: amSupplier ? pending.length : 0,
     pendingUnits: amSupplier ? pending.reduce((s, p) => s + p.qty, 0) : 0,
-    unlocked: total >= g.min_orders,
+    unlocked,
+    unitPrice: unlocked ? g.group_price : g.solo_price,
     status: g.status,
     fulfilledAt: g.fulfilled_at || null,
     myStatus: myOrder ? myOrder.status : 'none',
@@ -146,26 +151,32 @@ export function getSupplierGroup(req, res) {
 }
 
 export function createSupplierGroup(req, res) {
-  const { product, category, unit, description, soloPrice, groupPrice, minOrders } = req.body
+  const { product, category, unit, description, soloPrice, groupPrice, maxUnits, minOrders } = req.body
 
   if (!product || typeof product !== 'string') {
     return res.status(400).json({ message: 'Product name is required' })
   }
   const solo = Number(soloPrice)
   const group = Number(groupPrice)
-  const min = Math.max(Number(minOrders) || 1, 1)
+  const capRaw = Number(maxUnits) > 0 ? Number(maxUnits) : Number(minOrders) > 0 ? Number(minOrders) : 0
+  const cap = Math.max(Math.round(capRaw), 0)
   if (!(solo > 0) || !(group > 0)) {
     return res.status(400).json({ message: 'Solo and group prices are required' })
   }
   if (group >= solo) {
     return res.status(400).json({ message: 'Group price must be below the solo price' })
   }
+  if (!(cap >= 1)) {
+    return res.status(400).json({
+      message: 'Set a max unit cap — the group price only kicks in once combined units exceed it',
+    })
+  }
 
   const me = db.prepare('SELECT name, business_type FROM users WHERE id = ?').get(req.user.id)
   const info = db
     .prepare(
-      `INSERT INTO supplier_groups (product, supplier, supplier_user_id, category, unit, description, solo_price, group_price, min_orders, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')`
+      `INSERT INTO supplier_groups (product, supplier, supplier_user_id, category, unit, description, solo_price, group_price, min_orders, max_units, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')`
     )
     .run(
       product,
@@ -176,7 +187,8 @@ export function createSupplierGroup(req, res) {
       description || '',
       solo,
       group,
-      min
+      cap,
+      cap
     )
 
   const row = db.prepare('SELECT * FROM supplier_groups WHERE id = ?').get(info.lastInsertRowid)
@@ -294,9 +306,10 @@ export function fulfillSupplierGroup(req, res) {
   if (!supplierOnly(res, group, req.user.id)) return
 
   const total = activeUnits(group.id)
-  if (total < group.min_orders) {
+  const cap = group.max_units ?? group.min_orders ?? 1
+  if (total <= cap) {
     return res.status(400).json({
-      message: `Not enough committed units yet — need ${group.min_orders}, have ${total}`,
+      message: `The group price is not eligible yet — combined units must exceed the cap of ${cap}, currently ${total}`,
     })
   }
 

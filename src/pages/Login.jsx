@@ -13,6 +13,7 @@ function Login() {
   const { login, register } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const redirectTo = location.state?.from?.pathname || '/dashboard'
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -44,7 +45,7 @@ function Login() {
       } else {
         await register({ ...form })
       }
-      navigate(location.state?.from || '/dashboard')
+      navigate(redirectTo, { replace: true })
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
     } finally {

@@ -10,7 +10,10 @@ import SavingsDetail from './pages/SavingsDetail'
 import SavingsInvite from './pages/SavingsInvite'
 import Finance from './pages/Finance'
 import TrackerDetail from './pages/TrackerDetail'
+import Settings from './pages/Settings'
+import NotFound from './pages/NotFound'
 import ChatLauncher from './components/chat/ChatLauncher'
+import { ErrorBoundary } from './components/ui/ErrorBoundary'
 import { useAuth } from './context/AuthContext'
 
 function RequireAuth({ children }) {
@@ -21,7 +24,7 @@ function RequireAuth({ children }) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  return children
+  return <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>
 }
 
 function App() {
@@ -95,6 +98,14 @@ function App() {
           }
         />
         <Route
+          path="/settings"
+          element={
+            <RequireAuth>
+              <Settings />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="/trackers/:id"
           element={
             <RequireAuth>
@@ -102,6 +113,7 @@ function App() {
             </RequireAuth>
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <ChatLauncher />
     </>
