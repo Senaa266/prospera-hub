@@ -9,6 +9,7 @@ import GrantCard from '../components/GrantCard'
 import { AppButton } from '../components/ui/AppButton'
 import { AppCard } from '../components/ui/AppCard'
 import { GrantSkeleton } from '../components/ui/Skeleton'
+import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PageShell } from '../components/ui/PageShell'
 import { ProgressBar } from '../components/ui/ProgressBar'
@@ -32,16 +33,25 @@ function Dashboard() {
   const [featured, setFeatured] = useState(DEMO_GRANTS.slice(0, 4))
   const [featuredLive, setFeaturedLive] = useState(false)
   const [loadingGrants, setLoadingGrants] = useState(true)
+  const [grantsError, setGrantsError] = useState('')
   const [chatInput, setChatInput] = useState('')
 
   useEffect(() => {
     let active = true
     const load = async () => {
-      const { grants, live } = await loadGrants()
-      if (active) {
+      try {
+        const { grants, live } = await loadGrants()
+        if (!active) return
         setFeatured(grants.slice(0, 4))
         setFeaturedLive(live)
-        setLoadingGrants(false)
+        setGrantsError(live ? '' : 'Showing curated demo grants while live sources are offline.')
+      } catch (error) {
+        if (!active) return
+        setFeatured(DEMO_GRANTS.slice(0, 4))
+        setFeaturedLive(false)
+        setGrantsError(error?.message || 'Could not refresh grants. Showing demo matches.')
+      } finally {
+        if (active) setLoadingGrants(false)
       }
     }
     load()
@@ -118,7 +128,7 @@ function Dashboard() {
             <p className="m-0 text-sm text-muted">Hand-picked funding pulled live from external sources.</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-muted shadow-[var(--shadow-card)]">
+            <span className="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1 text-xs font-semibold text-muted shadow-[var(--shadow-card)]">
               <span className={`h-2 w-2 rounded-full ${featuredLive ? 'bg-emerald-500' : 'bg-amber-400'}`} />
               {featuredLive ? 'Live' : 'Demo'}
             </span>
@@ -128,14 +138,37 @@ function Dashboard() {
             </AppButton>
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {loadingGrants
-            ? [1, 2, 3, 4].map((key) => <GrantSkeleton key={key} />)
-            : featured.map((g) => <GrantCard key={g.id ?? g.title} grant={g} />)}
-        </div>
+        {grantsError ? (
+          <p className="mb-3 text-sm font-medium text-amber-800" role="status">
+            {grantsError}
+          </p>
+        ) : null}
+        {loadingGrants ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((key) => (
+              <GrantSkeleton key={key} />
+            ))}
+          </div>
+        ) : featured.length === 0 ? (
+          <EmptyState
+            icon="target"
+            title="No grants to show"
+            description="Check back soon, or ask Sena which funding paths fit your business."
+            actionLabel="Ask Sena"
+            onAction={() => open('Which grants fit my business?')}
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {featured.map((g) => (
+              <GrantCard key={g.id ?? g.title} grant={g} />
+            ))}
+          </div>
+        )}
       </section>
 
-      <section className="mb-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="mb-7">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Snapshot · illustrative</p>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {STATS.map((s) => (
           <AppCard key={s.label} className="relative overflow-hidden">
             <div className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${s.from} ${s.to} opacity-20`} />
@@ -152,6 +185,7 @@ function Dashboard() {
             </span>
           </AppCard>
         ))}
+        </div>
       </section>
 
       <AppCard className="border-line">

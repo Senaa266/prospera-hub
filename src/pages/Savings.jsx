@@ -86,7 +86,7 @@ function Savings() {
       <PageHeader
         title="Susu"
         accent="Savings"
-        subtitle="Group circles with full transparency, plus personal goals you control."
+        subtitle="Group circles with full transparency, plus personal goals you control. Contributions are demo-confirmed locally (no live debit)."
       />
 
         <div className="sav-stats">

@@ -7,6 +7,7 @@ import '../../pages/AIChat.css'
  */
 export function ChatCore({
   initialPrompt = '',
+  promptNonce = 0,
   onClose,
   titleId = 'sena-title',
   closeRef,
@@ -39,7 +40,7 @@ export function ChatCore({
           </button>
         ) : null}
       </header>
-      <ChatBox initialPrompt={initialPrompt} />
+      <ChatBox initialPrompt={initialPrompt} promptNonce={promptNonce} />
     </div>
   )
 }

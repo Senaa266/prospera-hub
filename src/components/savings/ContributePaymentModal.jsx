@@ -50,6 +50,7 @@ export function ContributePaymentModal({
   const [reference, setReference] = useState('')
   const [busy, setBusy] = useState(false)
   const [receipt, setReceipt] = useState('')
+  const [payError, setPayError] = useState('')
 
   const method = METHODS.find((item) => item.id === methodId)
   const selected = findProvider(providerId)
@@ -65,6 +66,7 @@ export function ContributePaymentModal({
     setReference('')
     setBusy(false)
     setReceipt('')
+    setPayError('')
   }
 
   const close = () => {
@@ -82,12 +84,18 @@ export function ContributePaymentModal({
   const confirm = async () => {
     if (!amountOk || !referenceOk) return
     setBusy(true)
-    await new Promise((resolve) => window.setTimeout(resolve, 700))
-    const code = `PH-${Date.now().toString().slice(-6)}`
-    setReceipt(code)
-    setBusy(false)
-    setStep('success')
-    onSuccess?.(parsedAmount)
+    setPayError('')
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 700))
+      const code = `PH-${Date.now().toString().slice(-6)}`
+      setReceipt(code)
+      setStep('success')
+      onSuccess?.(parsedAmount)
+    } catch {
+      setPayError('Payment could not be confirmed. Check your details and try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -169,7 +177,7 @@ export function ContributePaymentModal({
               step="1"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="rounded-xl border border-line bg-white px-3 py-2.5 text-base font-medium text-ink"
+              className="rounded-xl border border-line bg-card px-3 py-2.5 text-base font-medium text-ink"
               required
             />
           </label>
@@ -181,10 +189,15 @@ export function ContributePaymentModal({
               placeholder={selected.method.id === 'momo' ? '024 XXX XXXX' : 'Account number'}
               value={reference}
               onChange={(event) => setReference(event.target.value)}
-              className="rounded-xl border border-line bg-white px-3 py-2.5 text-base font-medium text-ink"
+              className="rounded-xl border border-line bg-card px-3 py-2.5 text-base font-medium text-ink"
               required
             />
           </label>
+          {payError ? (
+            <p className="m-0 text-sm font-medium text-rose-700" role="alert">
+              {payError}
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <AppButton type="submit" disabled={!amountOk || !referenceOk || busy}>
               {busy ? 'Confirming…' : `Confirm GH₵ ${amountOk ? parsedAmount : '—'}`}

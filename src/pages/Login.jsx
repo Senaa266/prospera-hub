@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Icon from '../components/icons'
 import './Auth.css'
@@ -12,6 +12,8 @@ function Login() {
   const [showPass, setShowPass] = useState(false)
   const { login, register } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const redirectTo = location.state?.from?.pathname || '/dashboard'
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -43,7 +45,7 @@ function Login() {
       } else {
         await register({ ...form })
       }
-      navigate('/dashboard')
+      navigate(redirectTo, { replace: true })
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
     } finally {

@@ -162,7 +162,7 @@ function Settings() {
       return
     }
     setPassword({ current: '', next: '', confirm: '' })
-    setPasswordMsg('Password updated for this demo session. Use it the next time you sign in.')
+    setPasswordMsg('Password updated for this demo session on this device. Live password resets will use your account email when auth is connected.')
   }
 
   const handleLogout = () => {
@@ -553,7 +553,9 @@ function Settings() {
 
           <AppCard>
             <h2 className="m-0 text-lg font-bold text-ink-strong">Session activity</h2>
-            <p className="mb-4 mt-1 text-sm text-muted">Devices that recently used your Prospera account.</p>
+            <p className="mb-4 mt-1 text-sm text-muted">
+              Illustrative devices for this demo. Live session revoke will appear when server auth is connected.
+            </p>
             <ul className="m-0 grid list-none gap-3 p-0">
               {sessions.map((session) => (
                 <li

@@ -50,7 +50,7 @@ export function FindOrdersModal({ open, suppliers, needs, onClose, onJoin }) {
             <h3 className="mb-2 mt-2 text-sm font-bold text-ink-strong">Posted needs</h3>
             <ul className="m-0 grid list-none gap-2 p-0">
               {needs.map((need) => (
-                <li key={need.id} className="rounded-xl border border-line bg-white px-3 py-2 text-sm">
+                <li key={need.id} className="rounded-xl border border-line bg-card px-3 py-2 text-sm">
                   <strong>{need.product}</strong> · qty {need.qty}
                   {need.budget ? ` · cap GH₵ ${need.budget}` : ''}
                 </li>

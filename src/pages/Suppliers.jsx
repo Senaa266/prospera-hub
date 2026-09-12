@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ChinaAgentsModal,
-  ContactSupplierModal,
-  FindOrdersModal,
-  JoinOrderModal,
-  ListNeedModal,
-  OrderHistoryModal,
-  RequestStockModal,
-} from '../components/suppliers/SupplierActions'
+import ChinaAgentsModal from '../components/suppliers/ChinaAgentsModal'
+import ContactSupplierModal from '../components/suppliers/ContactSupplierModal'
+import FindOrdersModal from '../components/suppliers/FindOrdersModal'
+import JoinOrderModal from '../components/suppliers/JoinOrderModal'
+import ListNeedModal from '../components/suppliers/ListNeedModal'
+import OrderHistoryModal from '../components/suppliers/OrderHistoryModal'
+import RequestStockModal from '../components/suppliers/RequestStockModal'
 import { AppButton } from '../components/ui/AppButton'
 import { AppCard } from '../components/ui/AppCard'
+import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PageShell } from '../components/ui/PageShell'
 import { ProgressBar } from '../components/ui/ProgressBar'
@@ -45,6 +44,15 @@ function Suppliers() {
       />
 
       <h2 className="mb-4 mt-0 text-lg font-bold text-ink-strong">Active group orders</h2>
+      {suppliers.length === 0 ? (
+        <EmptyState
+          icon="users"
+          title="No group orders yet"
+          description="List a product need or browse China agents while peer buys fill up."
+          actionLabel="List a product need"
+          onAction={() => setNeedOpen(true)}
+        />
+      ) : (
       <div className="grid gap-4 md:grid-cols-2">
         {suppliers.map((supplier) => {
           const pct = Math.min(100, Math.round((supplier.currentOrders / supplier.minOrders) * 100))
@@ -95,6 +103,7 @@ function Suppliers() {
           )
         })}
       </div>
+      )}
 
       <AppCard className="mt-6 bg-linear-to-br from-indigo-50 to-prospera-soft/70">
         <h4 className="m-0 text-ink-strong">China supplier access</h4>

@@ -109,7 +109,7 @@ function SupplierDetail() {
       </AppCard>
 
       <h2 className="mb-3 text-lg font-bold text-ink-strong">Catalog</h2>
-      <div className="mb-6 overflow-x-auto rounded-2xl border border-line bg-white shadow-[var(--shadow-card)]">
+      <div className="mb-6 overflow-x-auto rounded-2xl border border-line bg-card shadow-[var(--shadow-card)]">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-line text-muted">

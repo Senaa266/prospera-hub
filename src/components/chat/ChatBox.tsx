@@ -25,6 +25,7 @@ const EXAMPLE_PROMPTS = [
 
 type ChatBoxProps = {
   initialPrompt?: string
+  promptNonce?: number
 }
 
 /**
@@ -61,7 +62,7 @@ type AuthUser = {
 /**
  * Main Sena chat container: history, streaming, empty/error states, and composer.
  */
-export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
+export function ChatBox({ initialPrompt = '', promptNonce = 0 }: ChatBoxProps) {
   const { user, token } = useAuth() as { user: AuthUser | null; token: string | null }
   const { addTracker } = useTrackers()
   const [messages, setMessages] = useState<ChatMessageModel[]>(loadSessionMessages)
@@ -228,7 +229,7 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
     }, 0)
 
     return () => window.clearTimeout(timer)
-  }, [initialPrompt])
+  }, [initialPrompt, promptNonce])
 
   useEffect(() => {
     return () => abortRef.current?.abort()

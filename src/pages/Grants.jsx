@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/icons'
 import AIOffer from '../components/AIOffer'
 import GrantCard from '../components/GrantCard'
-import { AppButton } from '../components/ui/AppButton'
+import { EmptyState } from '../components/ui/EmptyState'
 import { GrantSkeleton } from '../components/ui/Skeleton'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PageShell } from '../components/ui/PageShell'
@@ -13,6 +13,7 @@ function Grants() {
   const [grants, setGrants] = useState(DEMO_GRANTS)
   const [live, setLive] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [query, setQuery] = useState('')
   const [type, setType] = useState('All')
   const [sort, setSort] = useState('deadline')
@@ -27,11 +28,19 @@ function Grants() {
   useEffect(() => {
     let active = true
     const load = async () => {
-      const { grants: list, live: isLive } = await loadGrants()
-      if (active) {
+      try {
+        const { grants: list, live: isLive } = await loadGrants()
+        if (!active) return
         setGrants(list)
         setLive(isLive)
-        setLoading(false)
+        setLoadError(isLive ? '' : 'Showing curated demo grants while live sources are offline.')
+      } catch (error) {
+        if (!active) return
+        setGrants(DEMO_GRANTS)
+        setLive(false)
+        setLoadError(error?.message || 'Could not refresh grants. Showing demo matches.')
+      } finally {
+        if (active) setLoading(false)
       }
     }
     load()
@@ -86,23 +95,21 @@ function Grants() {
         accent="& Funding"
         subtitle="Live opportunities from external funding sources. Filter, save and check fit."
         actions={
-          <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-muted shadow-[var(--shadow-card)]">
+          <span className="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-muted shadow-[var(--shadow-card)]">
             <span className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-500' : 'bg-amber-400'}`} />
             {live ? 'Live · from the web' : 'Demo data'}
           </span>
         }
       />
 
-      {!live && !loading && (
-        <div className="mb-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      {loadError && !loading ? (
+        <div className="mb-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
           <Icon name="external" size={16} />
-          <p className="m-0">
-            <strong>Offline.</strong> We couldn&apos;t reach the funding feed — showing demo data.
-          </p>
+          <p className="m-0">{loadError}</p>
         </div>
-      )}
+      ) : null}
 
-      <div className="mb-4 rounded-2xl border border-line bg-white p-4 shadow-[var(--shadow-card)]">
+      <div className="mb-4 rounded-2xl border border-line bg-card p-4 shadow-[var(--shadow-card)]">
         <div className="mb-3 flex flex-wrap gap-3">
           <label className="relative min-w-[220px] flex-1">
             <span className="sr-only">Search grants</span>
@@ -171,14 +178,15 @@ function Grants() {
             })}
       </div>
 
-      {!loading && filtered.length === 0 && (
-        <div className="mt-8 text-center">
-          <Icon name="search" size={30} />
-          <h3 className="mt-2 text-ink-strong">No grants match your filters</h3>
-          <p className="text-muted">Try a different keyword or reset the filters.</p>
-          <AppButton onClick={resetFilters}>Reset filters</AppButton>
-        </div>
-      )}
+      {!loading && filtered.length === 0 ? (
+        <EmptyState
+          icon="search"
+          title="No grants match your filters"
+          description="Try a different keyword or reset the filters."
+          actionLabel="Reset filters"
+          onAction={resetFilters}
+        />
+      ) : null}
 
       <div className="mt-8">
         <AIOffer

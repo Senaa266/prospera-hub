@@ -11,7 +11,9 @@ import Suppliers from './pages/Suppliers'
 import SupplierDetail from './pages/SupplierDetail'
 import Finance from './pages/Finance'
 import Settings from './pages/Settings'
+import NotFound from './pages/NotFound'
 import ChatLauncher from './components/chat/ChatLauncher'
+import { ErrorBoundary } from './components/ui/ErrorBoundary'
 import { useAuth } from './context/AuthContext'
 
 function RequireAuth({ children }) {
@@ -22,7 +24,7 @@ function RequireAuth({ children }) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  return children
+  return <ErrorBoundary key={location.pathname}>{children}</ErrorBoundary>
 }
 
 function App() {
@@ -111,6 +113,7 @@ function App() {
             </RequireAuth>
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <ChatLauncher />
     </>
