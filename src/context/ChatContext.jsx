@@ -8,10 +8,14 @@ const ChatContext = createContext(null)
 export function ChatProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false)
   const [initialPrompt, setInitialPrompt] = useState('')
+  const [activeGrant, setActiveGrant] = useState(null)
 
-  const open = useCallback((prompt = '') => {
+  const open = useCallback((prompt = '', grant = null) => {
     if (typeof prompt === 'string' && prompt.trim()) {
       setInitialPrompt(prompt.trim())
+    }
+    if (grant) {
+      setActiveGrant(grant)
     }
     setIsOpen(true)
   }, [])
@@ -24,9 +28,13 @@ export function ChatProvider({ children }) {
     setIsOpen((current) => !current)
   }, [])
 
+  const clearGrant = useCallback(() => {
+    setActiveGrant(null)
+  }, [])
+
   const value = useMemo(
-    () => ({ isOpen, initialPrompt, open, close, toggle }),
-    [isOpen, initialPrompt, open, close, toggle],
+    () => ({ isOpen, initialPrompt, activeGrant, open, close, toggle, clearGrant }),
+    [isOpen, initialPrompt, activeGrant, open, close, toggle, clearGrant],
   )
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>

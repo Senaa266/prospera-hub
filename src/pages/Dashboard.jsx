@@ -5,7 +5,7 @@ import { useChat } from '../context/ChatContext'
 import { useTrackers } from '../context/TrackersContext'
 import { trackerProgress } from '../lib/trackerProgress'
 import Icon from '../components/icons'
-import GrantCard from '../components/GrantCard'
+import GrantCarousel from '../components/GrantCarousel'
 import { AppButton } from '../components/ui/AppButton'
 import { AppCard } from '../components/ui/AppCard'
 import { GrantSkeleton } from '../components/ui/Skeleton'
@@ -29,18 +29,16 @@ function Dashboard() {
   const { open } = useChat()
   const { trackers } = useTrackers()
   const navigate = useNavigate()
-  const [featured, setFeatured] = useState(DEMO_GRANTS.slice(0, 4))
-  const [featuredLive, setFeaturedLive] = useState(false)
+  const [featured, setFeatured] = useState(DEMO_GRANTS)
   const [loadingGrants, setLoadingGrants] = useState(true)
   const [chatInput, setChatInput] = useState('')
 
   useEffect(() => {
     let active = true
     const load = async () => {
-      const { grants, live } = await loadGrants()
+      const { grants } = await loadGrants()
       if (active) {
-        setFeatured(grants.slice(0, 4))
-        setFeaturedLive(live)
+        setFeatured(grants.slice(0, 10))
         setLoadingGrants(false)
       }
     }
@@ -115,24 +113,22 @@ function Dashboard() {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="m-0 text-lg font-bold text-ink-strong">Opportunities for you</h2>
-            <p className="m-0 text-sm text-muted">Hand-picked funding pulled live from external sources.</p>
+            <p className="m-0 text-sm text-muted">Hand-picked funding matched to your business.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-muted shadow-[var(--shadow-card)]">
-              <span className={`h-2 w-2 rounded-full ${featuredLive ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-              {featuredLive ? 'Live' : 'Demo'}
-            </span>
-            <AppButton variant="outline" onClick={() => navigate('/grants')}>
-              View all grants
-              <Icon name="arrowRight" size={16} />
-            </AppButton>
+          <AppButton variant="outline" onClick={() => navigate('/grants')}>
+            View all grants
+            <Icon name="arrowRight" size={16} />
+          </AppButton>
+        </div>
+        {loadingGrants ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((key) => (
+              <GrantSkeleton key={key} />
+            ))}
           </div>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {loadingGrants
-            ? [1, 2, 3, 4].map((key) => <GrantSkeleton key={key} />)
-            : featured.map((g) => <GrantCard key={g.id ?? g.title} grant={g} />)}
-        </div>
+        ) : (
+          <GrantCarousel grants={featured} />
+        )}
       </section>
 
       <section className="mb-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

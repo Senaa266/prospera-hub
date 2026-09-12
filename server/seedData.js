@@ -208,6 +208,66 @@ export const GRANTS = [
     external_url: 'https://about.meta.com',
     image_url: null,
   },
+  {
+    title: 'Anzisha Prize Fellowship',
+    amount: 'US$ up to 40,000 + support',
+    amount_max: 40000,
+    description:
+      "Africa's biggest award for its youngest entrepreneurs: a two-year venture building fellowship with cash stipends, short courses, cloud services and grand prizes, delivered by African Leadership Academy with Mastercard Foundation.",
+    eligibility:
+      'African national aged 15–22 with an operating venture, founder/leader spending 20+ hours a week on it.',
+    deadline: 'Rolling',
+    type: 'Youth',
+    region: 'Pan-Africa',
+    source: 'Anzisha · African Leadership Academy',
+    external_url: 'https://anzisha.org/fellowship/',
+    image_url: null,
+  },
+  {
+    title: 'AECF Agribusiness Window',
+    amount: 'US$ 15,000 – 100,000',
+    amount_max: 100000,
+    description:
+      'African Enterprise Challenge Fund invests in agribusiness and rural enterprises reaching smallholder farmers — grants, repayable grants and investment across 40+ value chains in 23 countries.',
+    eligibility:
+      'Private-sector company with an innovative agribusiness model in a supported African country, able to match funding in cash or in-kind.',
+    deadline: 'Rolling',
+    type: 'Agri-business',
+    region: 'Sub-Saharan Africa',
+    source: 'Africa Enterprise Challenge Fund',
+    external_url: 'https://www.aecfafrica.org',
+    image_url: null,
+  },
+  {
+    title: 'MEST AI Startup Program',
+    amount: 'Fully funded + up to US$ 100,000 pre-seed',
+    amount_max: 100000,
+    description:
+      'A fully-sponsored, in-person incubator in Accra, Ghana: 7 months of AI startup training, a 4-month incubation phase, then a pitch for up to US$ 100,000 in pre-seed investment and entry to the MEST portfolio.',
+    eligibility:
+      'West/East African national aged 21–35 with software development experience and an entrepreneurial mindset (2027 intake: Ghana, Nigeria, Senegal, Kenya).',
+    deadline: 'Rolling',
+    type: 'Tech / Innovation',
+    region: 'West & East Africa',
+    source: 'MEST (Meltwater Entrepreneurial School of Technology)',
+    external_url: 'https://meltwater.org/mest-ai-startup-program/',
+    image_url: null,
+  },
+  {
+    title: 'USADF Grants to African Enterprises',
+    amount: 'US$ up to 250,000',
+    amount_max: 250000,
+    description:
+      'U.S. African Development Foundation provides direct grants, capacity building and convening opportunities to African-owned enterprises and community groups serving underserved, marginalised communities across Africa.',
+    eligibility:
+      '100%-African-owned and managed, legally recognised African organisation or enterprise; community-led model in an underserved area.',
+    deadline: 'Rolling',
+    type: 'All sectors',
+    region: 'Pan-Africa',
+    source: 'U.S. African Development Foundation',
+    external_url: 'https://www.usadf.gov/apply',
+    image_url: null,
+  },
 ]
 
 export const SAVING_CIRCLES = [

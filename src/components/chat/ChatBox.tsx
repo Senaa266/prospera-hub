@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useChat } from '../../context/ChatContext'
 import { useTrackers } from '../../context/TrackersContext'
 import { streamChatCompletion } from '../../api/chatStream.ts'
 import { buildTrackerEvent } from '../../lib/extractTracker.js'
@@ -63,6 +64,7 @@ type AuthUser = {
  */
 export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
   const { user, token } = useAuth() as { user: AuthUser | null; token: string | null }
+  const { activeGrant } = useChat()
   const { addTracker } = useTrackers()
   const [messages, setMessages] = useState<ChatMessageModel[]>(loadSessionMessages)
   const [draft, setDraft] = useState('')
@@ -83,8 +85,24 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
     if (user?.businessName || user?.businessType) {
       context.businessName = user.businessName || user.businessType
     }
+    if (activeGrant) {
+      const { id, title, amount, amountMax, description, eligibility, deadline, type, region, source, externalUrl } = activeGrant as Record<string, unknown>
+      context.activeGrant = {
+        id: (id as number | string | undefined) ?? undefined,
+        title: (title as string | undefined) ?? undefined,
+        amount: (amount as string | undefined) ?? undefined,
+        amountMax: (amountMax as number | undefined) ?? undefined,
+        description: (description as string | undefined) ?? undefined,
+        eligibility: (eligibility as string | undefined) ?? undefined,
+        deadline: (deadline as string | undefined) ?? undefined,
+        type: (type as string | undefined) ?? undefined,
+        region: (region as string | undefined) ?? undefined,
+        source: (source as string | undefined) ?? undefined,
+        externalUrl: (externalUrl as string | undefined) ?? undefined,
+      }
+    }
     return context
-  }, [user])
+  }, [user, activeGrant])
 
   useEffect(() => {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
@@ -127,7 +145,7 @@ export function ChatBox({ initialPrompt = '' }: ChatBoxProps) {
         await streamChatCompletion(
           {
             messages: nextHistory.map(({ role, content }) => ({ role, content })),
-            userContext: Object.keys(userContext).length ? userContext : undefined,
+            userContext: Object.keys(userContext).length ? userContext : {},
           },
           {
             token: token || 'demo-token',

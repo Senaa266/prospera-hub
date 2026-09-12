@@ -292,6 +292,217 @@
   font-weight: 700;
 }
 
+.chip-you {
+  background: #111114;
+  color: #fff;
+}
+
+.chip-wait {
+  background: #fff3e0;
+  color: #b26a00;
+}
+
+.chip-in {
+  background: #e9f7ef;
+  color: #178a4c;
+}
+
+.spp-chip {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 6px;
+  background: #f1f1f6;
+  color: #6f6f7c;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.spp-chip-app {
+  background: #eef0fe;
+  color: #4f46e5;
+}
+
+.my-collab .state-unlocked {
+  background: #e9f7ef;
+  color: #178a4c;
+}
+
+/* ---------- List a bulk offer modal ---------- */
+.offer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(17, 17, 20, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.offer-modal {
+  background: #fff;
+  border-radius: 22px;
+  width: min(680px, 100%);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.offer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #111114;
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.offer-head h2 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+}
+
+.offer-head p {
+  margin: 0;
+  color: #b9b9c6;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.offer-body {
+  padding: 20px 24px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.offer-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.offer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #5c5c6b;
+}
+
+.offer-field input,
+.offer-field select,
+.offer-field textarea {
+  border: 1px solid #e0e0e9;
+  border-radius: 11px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  color: #16161c;
+  outline: 0;
+  background: #fff;
+  font-family: inherit;
+}
+
+.offer-field input:focus,
+.offer-field select:focus,
+.offer-field textarea:focus {
+  border-color: #f10178;
+}
+
+.offer-field textarea {
+  resize: vertical;
+}
+
+.offer-field em {
+  color: #c11f55;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.offer-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  background: #fff3e0;
+  color: #8a5a00;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.offer-rule svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.offer-rule-ok {
+  background: #e9f7ef;
+  color: #178a4c;
+}
+
+.offer-rule-ok svg {
+  color: #178a4c;
+}
+
+.offer-error {
+  background: #fff1f4;
+  border: 1px solid #f9c4d3;
+  color: #c11f55;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 0.84rem;
+}
+
+.offer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ---------- Supplier-side inline approvals & fulfill ---------- */
+.approvals-inline {
+  margin-bottom: 18px;
+}
+
+.fulfill-cta {
+  margin-top: 12px;
+}
+
+.fulfilled-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  background: #e9f7ef;
+  color: #0f6b3b;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+
+.fulfilled-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #178a4c;
+}
+
+.modal-msg-ok {
+  color: #178a4c;
+}
+
 /* ---------- Steps ---------- */
 .steps-strip {
   display: grid;

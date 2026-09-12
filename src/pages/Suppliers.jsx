@@ -5,11 +5,8 @@ import AIOffer from '../components/AIOffer'
 import Icon from '../components/icons'
 import { useAuth } from '../context/AuthContext'
 import { suppliers as suppliersApi } from '../api/client'
-import { useSuppliers } from '../hooks/useSuppliers'
 import { AppButton } from '../components/ui/AppButton'
-import FindOrdersModal from '../components/suppliers/FindOrdersModal'
-import JoinOrderModal from '../components/suppliers/JoinOrderModal'
-import ListNeedModal from '../components/suppliers/ListNeedModal'
+import OfferModal from '../components/suppliers/OfferModal'
 import './Feature.css'
 import './Suppliers.css'
 
@@ -38,10 +35,8 @@ function Suppliers() {
   const [category, setCategory] = useState('All')
   const [sort, setSort] = useState('discount')
   const [active, setActive] = useState(null)
+  const [offerOpen, setOfferOpen] = useState(false)
   const autoOpenedRef = useRef(false)
-  const { needs, suppliers: portalSuppliers, addNeed, joinOrder } = useSuppliers()
-  const [portal, setPortal] = useState('')
-  const [portalSupplier, setPortalSupplier] = useState(null)
 
   const openGroup = useCallback(
     async (id) => {
@@ -83,15 +78,13 @@ function Suppliers() {
     load()
   }
 
-  const openPortal = (type, supplier = null) => {
-    setPortalSupplier(supplier)
-    setPortal(type)
-  }
-
-  const closePortal = () => {
-    setPortal('')
-    setPortalSupplier(null)
-  }
+  const createOffer = useCallback(
+    async (payload) => {
+      await suppliersApi.createGroup(payload, token)
+      await load()
+    },
+    [token, load]
+  )
 
   const categories = useMemo(() => {
     const set = [...new Set(groups.map((g) => g.category))]
@@ -103,7 +96,8 @@ function Suppliers() {
     () => groups.filter((g) => g.myStatus === 'active' || g.myStatus === 'pending'),
     [groups]
   )
-  const hosting = useMemo(() => groups.filter((g) => g.pendingCount > 0), [groups])
+  const myOffers = useMemo(() => groups.filter((g) => g.amSupplier), [groups])
+  const approvals = useMemo(() => groups.filter((g) => g.pendingCount > 0), [groups])
 
   const filtered = useMemo(() => {
     let list = groups
@@ -149,10 +143,10 @@ function Suppliers() {
     return units
   }, [myCollabs])
 
-  const hostingTitle = (g) =>
+  const approvalsTitle = (g) =>
     g.pendingCount === 1
-      ? `1 pending request · ${g.pendingUnits} unit${g.pendingUnits === 1 ? '' : 's'}`
-      : `${g.pendingCount} pending requests · ${g.pendingUnits} units`
+      ? `1 buyer wants in · ${g.pendingUnits} unit${g.pendingUnits === 1 ? '' : 's'}`
+      : `${g.pendingCount} buyers want in · ${g.pendingUnits} units`
 
   return (
     <div className="feature-page">
@@ -162,18 +156,14 @@ function Suppliers() {
           <div>
             <h1>Peer Supplier</h1>
             <p>
-              Can't buy in bulk alone? Team up with similar businesses, bargain your split, and
-              unlock supplier group prices together.
+              Every business here can buy and sell. List your own bulk offer, or team up with other
+              owners to hit a supplier&apos;s group price — the supplier is on Prospera with you.
             </p>
           </div>
           <div className="supplier-actions">
-            <AppButton variant="outline" onClick={() => openPortal('need')}>
+            <AppButton variant="dark" onClick={() => setOfferOpen(true)}>
               <Icon name="plus" size={15} />
-              List a product need
-            </AppButton>
-            <AppButton variant="dark" onClick={() => openPortal('find')}>
-              <Icon name="search" size={15} />
-              Find group orders
+              List a bulk offer
             </AppButton>
           </div>
         </div>
@@ -211,18 +201,18 @@ function Suppliers() {
 
         {error && <div className="supplier-error">{error}</div>}
 
-        {hosting.length > 0 && (
+        {approvals.length > 0 && (
           <section className="approvals-panel">
             <div className="approvals-title">
               <Icon name="shield" size={18} />
-              <h2>Needs your approval as host</h2>
+              <h2>Buyers waiting on your approval</h2>
             </div>
             <div className="approvals-list">
-              {hosting.map((g) => (
+              {approvals.map((g) => (
                 <div className="approval-row" key={g.id}>
                   <div>
                     <strong>{g.product}</strong>
-                    <span>{hostingTitle(g)}</span>
+                    <span>{approvalsTitle(g)}</span>
                   </div>
                   <button className="btn-primary-dark" type="button" onClick={() => openGroup(g.id)}>
                     Review
@@ -231,6 +221,78 @@ function Suppliers() {
               ))}
             </div>
           </section>
+        )}
+
+        {myOffers.length > 0 && (
+          <>
+            <h2 className="section-title">Your offers</h2>
+            <div className="my-collabs">
+              {myOffers.map((g) => (
+                <button
+                  type="button"
+                  className="my-collab"
+                  key={`offer-${g.id}`}
+                  onClick={() => openGroup(g.id)}
+                >
+                  <CategoryIcon category={g.category} />
+                  <div>
+                    <strong>{g.product}</strong>
+                    <span>
+                      {g.pendingCount > 0
+                        ? `${g.pendingCount} request${g.pendingCount === 1 ? '' : 's'} to review`
+                        : g.unlocked
+                          ? 'Unlocked — confirm the deal'
+                          : `${g.minOrders - g.committedUnits} more unit${
+                              g.minOrders - g.committedUnits === 1 ? '' : 's'
+                            } to unlock`}
+                    </span>
+                  </div>
+                  <span
+                    className={`my-collab-state ${
+                      g.pendingCount > 0 ? 'state-pending' : g.unlocked ? 'state-unlocked' : 'state-active'
+                    }`}
+                  >
+                    {g.pendingCount > 0 ? 'Approvals' : g.unlocked ? 'Unlocked' : 'Open'}
+                  </span>
+                  <Icon name="chevron" size={16} />
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {myCollabs.length > 0 && (
+          <>
+            <h2 className="section-title">Your collaborations</h2>
+            <div className="my-collabs">
+              {myCollabs.map((g) => (
+                <button
+                  type="button"
+                  className="my-collab"
+                  key={`${g.id}-${g.myStatus}`}
+                  onClick={() => openGroup(g.id)}
+                >
+                  <CategoryIcon category={g.category} />
+                  <div>
+                    <strong>{g.product}</strong>
+                    <span>
+                      {g.myStatus === 'pending'
+                        ? 'Awaiting the supplier’s approval'
+                        : 'Split board & chat'}
+                    </span>
+                  </div>
+                  <span
+                    className={`my-collab-state ${
+                      g.myStatus === 'pending' ? 'state-pending' : 'state-active'
+                    }`}
+                  >
+                    {g.myStatus}
+                  </span>
+                  <Icon name="chevron" size={16} />
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
         <div className="supplier-toolbar">
@@ -265,55 +327,35 @@ function Suppliers() {
           ))}
         </div>
 
-        {myCollabs.length > 0 && (
-          <>
-            <h2 className="section-title">Your collaborations</h2>
-            <div className="my-collabs">
-              {myCollabs.map((g) => (
-                <button
-                  type="button"
-                  className="my-collab"
-                  key={`${g.id}-${g.myStatus}`}
-                  onClick={() => openGroup(g.id)}
-                >
-                  <CategoryIcon category={g.category} />
-                  <div>
-                    <strong>{g.product}</strong>
-                    <span>
-                      {g.myStatus === 'pending' ? 'Awaiting host approval' : 'Split board & chat'}
-                    </span>
-                  </div>
-                  <span
-                    className={`my-collab-state ${
-                      g.myStatus === 'pending' ? 'state-pending' : 'state-active'
-                    }`}
-                  >
-                    {g.myStatus}
-                  </span>
-                  <Icon name="chevron" size={16} />
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        <h2 className="section-title">Browse group orders</h2>
+        <h2 className="section-title">Browse group buys</h2>
         {loading ? (
           <div className="supplier-loading">Loading suppliers…</div>
         ) : filtered.length === 0 ? (
           <div className="supplier-empty">
-            No products match "{query}". Try a different search or category.
+            No products match "{query}". Try another search — or list your own offer above.
           </div>
         ) : (
           <div className="suppliers-grid">
             {filtered.map((g) => {
               const pct = Math.min((g.committedUnits / g.minOrders) * 100, 100)
+              const cta = g.amSupplier
+                ? 'Manage offer'
+                : g.myStatus === 'pending'
+                  ? 'View request'
+                  : g.myStatus === 'active'
+                    ? 'Open your buy'
+                    : 'Team up'
               return (
                 <div className="supplier-card" key={g.id}>
                   <div className="supplier-badge">Save {g.discountPct}%</div>
                   <h3>{g.product}</h3>
                   <p className="supplier-name">
                     {g.supplier} · {g.category}
+                    {g.supplierUserId ? (
+                      <span className="spp-chip spp-chip-app">on Prospera</span>
+                    ) : (
+                      <span className="spp-chip">marketplace supplier</span>
+                    )}
                   </p>
                   <div className="price-comparison">
                     <div className="price-old">
@@ -344,15 +386,15 @@ function Suppliers() {
                   </div>
                   <div className="card-members">
                     <Icon name="users" size={14} />
-                    {g.activeMembers} collab{g.activeMembers === 1 ? 'or' : 'ors'}
-                    {g.myStatus === 'pending' && <span className="chip-chip">request pending</span>}
+                    {g.activeMembers} buyer{g.activeMembers === 1 ? '' : 's'}
+                    {g.amSupplier && <span className="chip-chip chip-you">your offer</span>}
+                    {g.myStatus === 'pending' && (
+                      <span className="chip-chip chip-wait">request sent</span>
+                    )}
+                    {g.myStatus === 'active' && <span className="chip-chip chip-in">you&apos;re in</span>}
                   </div>
                   <button className="btn-join" type="button" onClick={() => openGroup(g.id)}>
-                    {g.myStatus === 'active'
-                      ? 'Open your collab'
-                      : g.myStatus === 'pending'
-                      ? 'View request'
-                      : 'Team up'}
+                    {cta}
                   </button>
                 </div>
               )
@@ -363,24 +405,24 @@ function Suppliers() {
         <div className="steps-strip">
           <div className="step">
             <span>1</span>
-            <strong>Pick a product</strong>
-            <p>Search verified suppliers offering group rates.</p>
+            <strong>Pick a deal</strong>
+            <p>Browse offers listed by businesses on Prospera or your local marketplace.</p>
           </div>
           <div className="step">
             <span>2</span>
-            <strong>Request to join</strong>
-            <p>State how many units you want and your split.</p>
+            <strong>Team up</strong>
+            <p>State your units. The supplier approves you and the group moves closer to the price.</p>
           </div>
           <div className="step">
             <span>3</span>
-            <strong>Bargain & chat</strong>
-            <p>Adjust shares, invite partners, talk to the supplier, then unlock the deal.</p>
+            <strong>Unlock & get it</strong>
+            <p>When enough units are committed the group price unlocks, the supplier fulfills, and each buyer&apos;s purchase lands in their Finance.</p>
           </div>
         </div>
 
         <AIOffer
-          title="Not sure how to price your share?"
-          text="Ask Sena to work out your cheapest unit cost, fair split, or reorder plan with the group price baked in."
+          title="Selling in bulk too?"
+          text="Ask Sena to price an offer, estimate how many committed buyers you need, or compare your margins against the marketplace."
           cta="Ask your coach"
         />
       </main>
@@ -395,30 +437,15 @@ function Suppliers() {
         />
       )}
 
-      <ListNeedModal open={portal === 'need'} onClose={closePortal} onSubmit={addNeed} />
-      <FindOrdersModal
-        open={portal === 'find'}
-        suppliers={portalSuppliers}
-        needs={needs}
-        onClose={closePortal}
-        onJoin={(supplier) => openPortal('join', supplier)}
-      />
-      <JoinOrderModal
-        open={portal === 'join'}
-        supplier={portalSupplier}
-        onClose={closePortal}
-        onJoin={(supplierId, qty) => {
-          joinOrder(supplierId, qty)
-          closePortal()
-        }}
-      />
+      <OfferModal open={offerOpen} onClose={() => setOfferOpen(false)} onSubmit={createOffer} />
     </div>
   )
 }
 
 function CollabModal({ data, me, token, onClose, onChanged }) {
   const [group, setGroup] = useState(data.group)
-  const [channel, setChannel] = useState('team')
+  const isSupplier = Boolean(group.amSupplier)
+  const [channel, setChannel] = useState(isSupplier ? 'supplier' : 'team')
   const [text, setText] = useState('')
   const [qty, setQty] = useState(1)
   const [note, setNote] = useState('')
@@ -471,6 +498,12 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
 
   const doApprove = (member) => act(() => suppliersApi.approve(group.id, member.id, token))
   const doReject = (member) => act(() => suppliersApi.reject(group.id, member.id, token))
+  const doFulfill = () =>
+    act(async () => {
+      const res = await suppliersApi.fulfill(group.id, token)
+      setMsg(`Deal done — ${res.notes.length} buyer${res.notes.length === 1 ? '' : 's'} billed at group price.`)
+      return res
+    })
 
   const copyInvite = () => {
     const url = `${window.location.origin}/suppliers?group=${group.id}`
@@ -484,6 +517,8 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
   const pct = Math.min((group.committedUnits / group.minOrders) * 100, 100)
   const channelMessages = group.messages.filter((m) => m.channel === channel)
   const isActive = group.myOrder?.status === 'active'
+  const pendingMembers = group.members.filter((m) => m.status === 'pending')
+  const fulfilled = group.status === 'fulfilled'
 
   return (
     <div className="collab-overlay" role="dialog" aria-modal="true">
@@ -503,6 +538,16 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
 
         <div className="collab-body">
           <div className="collab-left">
+            {fulfilled && (
+              <div className="fulfilled-banner">
+                <Icon name="check" size={16} />
+                <span>
+                  Deal fulfilled {formatDate(group.fulfilledAt)}. Purchases were recorded in each
+                  buyer&apos;s Finance.
+                </span>
+              </div>
+            )}
+
             <div className="unlock-panel">
               <div className="unlock-line">
                 <span>
@@ -518,26 +563,93 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                 <div className={group.unlocked ? 'bar-unlocked' : ''} style={{ width: `${pct}%` }} />
               </div>
               <p>
-                {group.unlocked
-                  ? `The group deal is live. Total group value ${formatGH(
-                      group.committedValue
-                    )} vs ${formatGH(group.soloValue)} buying alone.`
-                  : `${Math.max(group.minOrders - group.committedUnits, 0)} more ${
-                      group.unit === 'yard' ? 'yards' : 'units'
-                    } to unlock — invite a partner or bump your share.`}
+                {isSupplier
+                  ? group.unlocked
+                    ? `The deal is live. Confirm it to bill ${group.activeMembers} buyer${
+                        group.activeMembers === 1 ? '' : 's'
+                      } at ${formatGH(group.groupPrice)} / ${group.unit} and close the offer.`
+                    : `${Math.max(group.minOrders - group.committedUnits, 0)} more ${
+                        group.unit === 'yard' ? 'yards' : 'units'
+                      } to unlock — share the link or answer buyers in chat.`
+                  : group.unlocked
+                    ? `Live. Your share costs ${formatGH(
+                        (group.myOrder?.qty || qty) * group.groupPrice
+                      )} — ${formatGH((group.myOrder?.qty || 0) * (group.soloPrice - group.groupPrice))} saved vs buying alone.`
+                    : `${Math.max(group.minOrders - group.committedUnits, 0)} more ${
+                        group.unit === 'yard' ? 'yards' : 'units'
+                      } to unlock — every committed unit lowers the price for everyone.`}
               </p>
+
+              {isSupplier && !fulfilled && (
+                <div className="fulfill-cta">
+                  <button
+                    className="btn-primary-dark"
+                    type="button"
+                    disabled={busy || !group.unlocked}
+                    onClick={doFulfill}
+                  >
+                    {group.unlocked
+                      ? 'Confirm order & fulfill'
+                      : `Waiting on ${Math.max(group.minOrders - group.committedUnits, 0)} more units`}
+                  </button>
+                </div>
+              )}
             </div>
 
+            {isSupplier && pendingMembers.length > 0 && (
+              <div className="approvals-inline">
+                <div className="split-head">
+                  <h3>Requests to approve</h3>
+                  <span>{pendingMembers.length} waiting</span>
+                </div>
+                <div className="split-board">
+                  {pendingMembers.map((m) => (
+                    <div className="split-row split-pending" key={m.id}>
+                      <div className="split-avatar">{m.name.charAt(0)}</div>
+                      <div className="split-info">
+                        <div className="split-name">
+                          <strong>{m.name}</strong>
+                          <span className="pending-tag">pending</span>
+                        </div>
+                        <div className="split-detail">
+                          <span>
+                            {m.qty} {group.unit === 'yard' ? 'yd' : group.unit}
+                            {m.qty > 1 ? 's' : ''}
+                            {group.unlocked && <span className="cost"> · {formatGH(m.qty * group.groupPrice)}</span>}
+                          </span>
+                        </div>
+                        {m.note && <div className="split-note">"{m.note}"</div>}
+                      </div>
+                      <div className="split-actions">
+                        <button className="approve-btn" type="button" disabled={busy} onClick={() => doApprove(m)}>
+                          <Icon name="check" size={15} /> Approve
+                        </button>
+                        <button
+                          className="reject-btn"
+                          type="button"
+                          disabled={busy}
+                          onClick={() => doReject(m)}
+                          aria-label="Reject request"
+                        >
+                          <Icon name="x" size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="split-head">
-              <h3>Split board</h3>
+              <h3>{isSupplier ? 'Buyers in this buy' : 'Split board'}</h3>
               <span>
-                {group.activeMembers} member{group.activeMembers === 1 ? '' : 's'} · swaps are
+                {group.activeMembers} buyer{group.activeMembers === 1 ? '' : 's'} · shares are
                 instant
               </span>
             </div>
 
             <div className="split-board">
-              {group.members.map((m) => {
+              {group.members.filter((m) => m.status !== 'pending' || isSupplier).map((m) => {
                 const isMe = m.userId === me
                 return (
                   <div
@@ -551,7 +663,6 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                           {m.name}
                           {isMe && <span className="you-tag">you</span>}
                         </strong>
-                        {m.isHost && <span className="host-tag">host</span>}
                         {m.status === 'pending' && <span className="pending-tag">pending</span>}
                       </div>
                       <div className="split-detail">
@@ -566,28 +677,7 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                       </div>
                       {m.note && <div className="split-note">"{m.note}"</div>}
                     </div>
-                    {group.amHost && m.status === 'pending' && !isMe && (
-                      <div className="split-actions">
-                        <button
-                          className="approve-btn"
-                          type="button"
-                          disabled={busy}
-                          onClick={() => doApprove(m)}
-                        >
-                          <Icon name="check" size={15} /> Approve
-                        </button>
-                        <button
-                          className="reject-btn"
-                          type="button"
-                          disabled={busy}
-                          onClick={() => doReject(m)}
-                          aria-label="Reject request"
-                        >
-                          <Icon name="x" size={15} />
-                        </button>
-                      </div>
-                    )}
-                    {isMe && m.status === 'active' && (
+                    {isMe && m.status === 'active' && !isSupplier && (
                       <div className="split-actions">
                         <div className="qty-stepper">
                           <button type="button" disabled={busy || m.qty <= 1} onClick={() => changeShare(-1)}>
@@ -602,20 +692,25 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                     )}
                     {isMe && m.status === 'pending' && (
                       <div className="split-actions">
-                        <span className="waiting-tag">Waiting for host</span>
+                        <span className="waiting-tag">Awaiting supplier</span>
                       </div>
                     )}
                   </div>
                 )
               })}
+              {group.members.length === 0 && (
+                <div className="supplier-empty">No buyers yet — share your invite link to start.</div>
+              )}
             </div>
 
-            {!group.myOrder && (
+            {!group.myOrder && !isSupplier && !fulfilled && (
               <div className="join-panel">
-                <h3>Join this collaboration</h3>
+                <h3>{group.supplierUserId ? 'Request to join this buy' : 'Join this group buy'}</h3>
                 <p>
-                  Tell the host how many {group.unit === 'yard' ? 'yards' : 'units'} you need and how
-                  you'd like to split it.
+                  Tell the supplier how many {group.unit === 'yard' ? 'yards' : 'units'} you need
+                  {group.supplierUserId
+                    ? ' — they will approve you before the count moves.'
+                    : ' — your units count toward the unlock right away.'}
                 </p>
                 <div className="join-controls">
                   <div className="qty-stepper">
@@ -631,11 +726,11 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                     className="note-input"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    placeholder="e.g. Happy with 50/50, need it next week"
+                    placeholder="e.g. Need 2 bags, can collect this week"
                   />
                 </div>
                 <button className="btn-primary-dark" type="button" disabled={busy} onClick={doJoin}>
-                  {group.activeMembers === 0 ? 'Start this group' : 'Request to join'}
+                  {group.supplierUserId ? 'Send request' : 'Join group buy'}
                 </button>
                 {msg && <div className="modal-msg">{msg}</div>}
               </div>
@@ -643,7 +738,7 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
 
             {isActive && (
               <div className="share-calc">
-                <span>Your cost at group price</span>
+                <span>{group.unlocked ? 'Your cost at group price' : 'Your cost once unlocked'}</span>
                 <strong>
                   {formatGH(group.myOrder.qty * group.groupPrice)}
                   <small>
@@ -654,28 +749,34 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
               </div>
             )}
 
-            <button className="invite-btn" type="button" onClick={copyInvite}>
-              <Icon name="copy" size={15} />
-              {copied ? 'Invite link copied' : 'Copy invite link to add collaborators'}
-            </button>
+            {!isSupplier && (
+              <button className="invite-btn" type="button" onClick={copyInvite}>
+                <Icon name="copy" size={15} />
+                {copied ? 'Invite link copied' : 'Copy invite link to grow the group'}
+              </button>
+            )}
 
-            {!group.unlocked && (
+            {!group.unlocked && !fulfilled && (
               <div className="tip-box">
                 <Icon name="sparkles" size={16} />
-                Tip: bump your share or invite a partner to cross the unlock line — everyone pays less.
+                {isSupplier
+                  ? 'Drop a message in the chat or share your invite link to bring in the buyers you need.'
+                  : 'Invite a partner or bump your share to cross the unlock line — everyone pays less.'}
               </div>
             )}
           </div>
 
           <div className="collab-chat">
             <div className="chat-tabs">
-              <button
-                type="button"
-                className={channel === 'team' ? 'tab-active' : ''}
-                onClick={() => setChannel('team')}
-              >
-                Team
-              </button>
+              {!isSupplier && (
+                <button
+                  type="button"
+                  className={channel === 'team' ? 'tab-active' : ''}
+                  onClick={() => setChannel('team')}
+                >
+                  Buyers
+                </button>
+              )}
               <button
                 type="button"
                 className={channel === 'supplier' ? 'tab-active' : ''}
@@ -687,8 +788,9 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
             <div className="chat-thread" ref={chatRef}>
               {channelMessages.length === 0 && (
                 <div className="chat-empty">
-                  Start the conversation {channel === 'supplier' ? 'with the supplier' : 'with your team'} —
-                  clarify quantities, timings and who lifts what.
+                  {channel === 'supplier'
+                    ? `Talk to ${isSupplier ? 'buyers' : group.supplier} about quantities, lead time and delivery.`
+                    : 'Coordinate with other buyers — who takes how much, and who lifts what.'}
                 </div>
               )}
               {channelMessages.map((m) => (
@@ -697,8 +799,8 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                     m.senderType === 'supplier'
                       ? 'msg-supplier'
                       : m.senderId === me
-                      ? 'msg-me'
-                      : 'msg-them'
+                        ? 'msg-me'
+                        : 'msg-them'
                   }`}
                   key={m.id}
                 >
@@ -723,7 +825,9 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
                   }
                 }}
                 placeholder={
-                  channel === 'supplier' ? `Message ${group.supplier}…` : 'Message your collaborators…'
+                  channel === 'supplier'
+                    ? `Message ${isSupplier ? 'your buyers' : group.supplier}…`
+                    : 'Message other buyers…'
                 }
               />
               <button type="button" disabled={busy || !text.trim()} onClick={doSend} aria-label="Send">
@@ -733,7 +837,8 @@ function CollabModal({ data, me, token, onClose, onChanged }) {
           </div>
         </div>
 
-        {msg && <div className="modal-msg modal-msg-foot">{msg}</div>}
+        {msg && !fulfilled && <div className="modal-msg modal-msg-foot">{msg}</div>}
+        {fulfilled && <div className="modal-msg modal-msg-foot modal-msg-ok">{msg}</div>}
       </div>
     </div>
   )
@@ -748,6 +853,18 @@ function formatTime(value) {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+    })
+  } catch {
+    return value
+  }
+}
+
+function formatDate(value) {
+  if (!value) return ''
+  try {
+    return new Date(`${value}`.replace('Z', '')).toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
     })
   } catch {
     return value

@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import bcrypt from 'bcryptjs'
 import { GRANTS, SAVING_CIRCLES, SUPPLIERS, TRANSACTIONS } from './seedData.js'
 
 const dir = path.dirname(fileURLToPath(import.meta.url))
@@ -54,6 +55,12 @@ CREATE TABLE IF NOT EXISTS savings_circles (
   total_members INTEGER,
   visibility TEXT DEFAULT 'Public',
   status TEXT DEFAULT 'active',
+  description TEXT DEFAULT '',
+  weekly REAL DEFAULT 200,
+  cycle_len TEXT DEFAULT 'weekly',
+  created_by INTEGER,
+  current_cycle INTEGER DEFAULT 1,
+  pot REAL DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -62,7 +69,64 @@ CREATE TABLE IF NOT EXISTS savings_members (
   circle_id INTEGER NOT NULL,
   user_id INTEGER NOT NULL,
   joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  role TEXT DEFAULT 'member',
+  position INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'active',
+  missed INTEGER DEFAULT 0,
+  paid_current INTEGER DEFAULT 0,
+  demo_name TEXT,
   UNIQUE(circle_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS savings_goals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  tag TEXT DEFAULT 'Personal goal',
+  target REAL NOT NULL,
+  weekly REAL DEFAULT 0,
+  saved REAL DEFAULT 0,
+  next_due TEXT DEFAULT 'This week',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS savings_payments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  actor_id INTEGER,
+  actor_name TEXT,
+  circle_id INTEGER,
+  goal_id INTEGER,
+  kind TEXT DEFAULT 'contribution',
+  description TEXT NOT NULL,
+  amount REAL NOT NULL,
+  method TEXT DEFAULT 'paystack',
+  reference TEXT,
+  status TEXT DEFAULT 'completed',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS savings_invites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  circle_id INTEGER NOT NULL,
+  created_by INTEGER NOT NULL,
+  email TEXT,
+  token TEXT NOT NULL UNIQUE,
+  status TEXT DEFAULT 'pending',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS savings_investments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  provider TEXT NOT NULL,
+  name TEXT NOT NULL,
+  amount REAL NOT NULL,
+  rate REAL NOT NULL,
+  term_months INTEGER NOT NULL,
+  return_amount REAL NOT NULL,
+  status TEXT DEFAULT 'active',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS supplier_groups (
@@ -122,6 +186,18 @@ for (const [table, column, ddl] of [
   ['supplier_orders', 'host', 'ALTER TABLE supplier_orders ADD COLUMN host INTEGER DEFAULT 0'],
   ['supplier_orders', 'status', "ALTER TABLE supplier_orders ADD COLUMN status TEXT DEFAULT 'active'"],
   ['supplier_orders', 'note', 'ALTER TABLE supplier_orders ADD COLUMN note TEXT'],
+  ['savings_circles', 'description', "ALTER TABLE savings_circles ADD COLUMN description TEXT DEFAULT ''"],
+  ['savings_circles', 'weekly', 'ALTER TABLE savings_circles ADD COLUMN weekly REAL DEFAULT 200'],
+  ['savings_circles', 'cycle_len', "ALTER TABLE savings_circles ADD COLUMN cycle_len TEXT DEFAULT 'weekly'"],
+  ['savings_circles', 'created_by', 'ALTER TABLE savings_circles ADD COLUMN created_by INTEGER'],
+  ['savings_circles', 'current_cycle', 'ALTER TABLE savings_circles ADD COLUMN current_cycle INTEGER DEFAULT 1'],
+  ['savings_circles', 'pot', 'ALTER TABLE savings_circles ADD COLUMN pot REAL DEFAULT 0'],
+  ['savings_members', 'role', "ALTER TABLE savings_members ADD COLUMN role TEXT DEFAULT 'member'"],
+  ['savings_members', 'position', 'ALTER TABLE savings_members ADD COLUMN position INTEGER DEFAULT 0'],
+  ['savings_members', 'status', "ALTER TABLE savings_members ADD COLUMN status TEXT DEFAULT 'active'"],
+  ['savings_members', 'missed', 'ALTER TABLE savings_members ADD COLUMN missed INTEGER DEFAULT 0'],
+  ['savings_members', 'paid_current', 'ALTER TABLE savings_members ADD COLUMN paid_current INTEGER DEFAULT 0'],
+  ['savings_members', 'demo_name', 'ALTER TABLE savings_members ADD COLUMN demo_name TEXT'],
 ]) {
   try {
     const cols = db.prepare(`PRAGMA table_info(${table})`).all()
@@ -192,7 +268,7 @@ seedDemoSupplierOrders()
 
 function syncSupplierCatalog() {
   const upd = db.prepare(
-    `UPDATE supplier_groups SET category = ?, unit = ?, description = ?, status = ?
+    `UPDATE supplier_groups SET category = ?, unit = ?, description = ?
      WHERE product = ? AND supplier = ?`
   )
   const ins = db.prepare(
@@ -200,7 +276,7 @@ function syncSupplierCatalog() {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
   for (const s of SUPPLIERS) {
-    const info = upd.run(s.category, s.unit, s.description, s.status, s.product, s.supplier)
+    const info = upd.run(s.category, s.unit, s.description, s.product, s.supplier)
     if (info.changes === 0) {
       ins.run(s.product, s.supplier, s.category, s.unit, s.description, s.solo_price, s.group_price, s.min_orders, s.status)
     }
@@ -220,6 +296,11 @@ function demoUserId() {
   if (byEmail) return byEmail.id
   const first = db.prepare('SELECT id FROM users ORDER BY id LIMIT 1').get()
   return first?.id ?? null
+}
+
+function firstUserId() {
+  const first = db.prepare('SELECT id FROM users ORDER BY id LIMIT 1').get()
+  return first?.id ?? demoUserId()
 }
 
 function ensureDemoHost() {
@@ -285,3 +366,190 @@ function seedDemoCollabs() {
 
 seedDemoCollabs()
 ensureDemoHost()
+
+const SAVING_META = {
+  'Ayah Susu Circle': { weekly: 200, cycle_len: 'weekly', pot: 12800, description: 'Neighbourhood traders pooling weekly for predictable lump sums.' },
+  'Trader Women Group': { weekly: 100, cycle_len: 'weekly', pot: 8400, description: 'Market women saving together with rotating weekly payouts.' },
+  'Market Queens Co-op': { weekly: 250, cycle_len: 'bi-weekly', pot: 6250, description: 'Agri-traders pooling bi-weekly for bigger capital boosts.' },
+  'Pearl & Gold Traders': { weekly: 150, cycle_len: 'weekly', pot: 9600, description: 'Jewellery and accessories businesses saving for stock seasons.' },
+}
+
+const SAVING_ROSTERS = {
+  'Ayah Susu Circle': {
+    filled: 8,
+    members: ['Ama Serwaa', 'Kofi Boateng', 'Adjoa Mensah', 'Kwame Owusu', 'Efua Dede', 'Yaw Asare', 'Akosua Frimpong', 'Kojo Asante', 'Abena Kwarteng', 'Kwesi Appiah', 'Esi Nyarko', 'Kweku Danso'],
+  },
+  'Trader Women Group': {
+    filled: 14,
+    members: ['Abena Kwarteng', 'Efua Boateng', 'Adjoa Mensah', 'Akosua Frimpong', 'Ama Serwaa', 'Yaa Mensa', 'Kadija Sule', 'Esi Nyarko', 'Araba Andoh', 'Afia Owusu', 'Aba Poku', 'Akua Darko', 'Sedinam Adjei', 'Maame Acheampong', 'Adwoa Amoah', 'Ashley Mensimah', 'Gifty Badu', 'Abigail Tetteh', 'Rosina Quaye', 'Stella Afriyie'],
+  },
+  'Market Queens Co-op': {
+    filled: 6,
+    members: ['Adwoa Amoah', 'Kwame Owusu', 'Esi Nyarko', 'Kofi Boateng', 'Afia Owusu', 'Nana Ansong', 'Akwasi Frimpong', 'Cynthia Adu', 'Daniel Ofori', 'Gloria Adusei'],
+  },
+  'Pearl & Gold Traders': {
+    filled: 11,
+    members: ['Kojo Asante', 'Abena Kwarteng', 'Efua Dede', 'Kwesi Appiah', 'Yaa Mensa', 'Kweku Danso', 'Akosua Frimpong', 'Ama Serwaa', 'Kwabena Darko', 'Esi Nyarko', 'Afia Owusu', 'Kofi Boateng', 'Adwoa Amoah', 'Kwame Owusu', 'Naa Mansa'],
+  },
+}
+
+function ensureDemoUser() {
+  const byEmail = db.prepare("SELECT id FROM users WHERE email = 'ama@prospera.demo'").get()
+  if (byEmail) return byEmail.id
+  const hash = bcrypt.hashSync('demo1234', 4)
+  const info = db
+    .prepare('INSERT INTO users (name, email, password_hash, business_type) VALUES (?, ?, ?, ?)')
+    .run('Ama Owusu', 'ama@prospera.demo', hash, 'Beads & accessories')
+  return Number(info.lastInsertRowid)
+}
+
+function circleIdByName(name) {
+  return db.prepare('SELECT id FROM savings_circles WHERE name = ? LIMIT 1').get(name)?.id ?? null
+}
+
+function syncSavingsCircleMeta() {
+  const upd = db.prepare(
+    `UPDATE savings_circles SET description = ?, weekly = ?, cycle_len = ?, pot = ?
+     WHERE name = ?`
+  )
+  for (const [name, meta] of Object.entries(SAVING_META)) {
+    upd.run(meta.description, meta.weekly, meta.cycle_len, meta.pot, name)
+  }
+}
+
+function seedDemoSavings() {
+  syncSavingsCircleMeta()
+  ensureDemoUser()
+  const demoUid = firstUserId()
+
+  const cleaned = db
+    .prepare(`SELECT COUNT(*) AS n FROM meta WHERE key = 'savings_demo_cleanup'`)
+    .get().n
+  if (cleaned === 0) {
+    const demoCircleIds = Object.keys(SAVING_ROSTERS)
+      .map((n) => circleIdByName(n))
+      .filter(Boolean)
+    db.prepare(
+      `UPDATE users SET name = 'Ama Owusu'
+       WHERE id = ? AND name = 'Real Tester'`
+    ).run(demoUid || -1)
+    if (demoCircleIds.length > 0) {
+      db.prepare(
+        `DELETE FROM savings_members
+         WHERE demo_name IS NULL AND user_id != ?
+           AND circle_id IN (${demoCircleIds.join(',')})`
+      ).run(demoUid || -1)
+      db.prepare(
+        `DELETE FROM savings_payments
+         WHERE kind = 'payout' AND reference = 'PAY-0709'
+           AND id NOT IN (
+             SELECT MIN(id) FROM savings_payments WHERE kind = 'payout' AND reference = 'PAY-0709'
+           )`
+      ).run()
+    }
+    db.prepare(`INSERT INTO meta (key, value) VALUES ('savings_demo_cleanup', '1')`).run()
+  }
+
+  const memberIns = db.prepare(
+    `INSERT OR IGNORE INTO savings_members
+       (circle_id, user_id, role, position, status, missed, paid_current, demo_name)
+     VALUES (?, ?, ?, ?, 'active', ?, ?, ?)`
+  )
+
+  for (const [name, roster] of Object.entries(SAVING_ROSTERS)) {
+    const circleId = circleIdByName(name)
+    if (!circleId) continue
+    roster.members.forEach((memberName, index) => {
+      if (name === 'Ayah Susu Circle' && index + 1 === 3) return
+      memberIns.run(
+        circleId,
+        -100 - index,
+        index === 0 ? 'member' : 'member',
+        index + 1,
+        0,
+        index < roster.filled ? 1 : 0,
+        memberName
+      )
+    })
+  }
+
+  const ayah = circleIdByName('Ayah Susu Circle')
+  if (ayah && demoUid) {
+    db.prepare(
+      `INSERT OR IGNORE INTO savings_members (circle_id, user_id, role, position, status, missed, paid_current, demo_name)
+       VALUES (?, ?, 'member', 3, 'active', 0, 1, NULL)`
+    ).run(ayah, demoUid)
+
+    const ayahPay = db.prepare(
+      `INSERT INTO savings_payments
+         (user_id, actor_id, actor_name, circle_id, kind, description, amount, method, reference, created_at)
+       VALUES (?, ?, ?, ?, 'contribution', ?, ?, 'paystack', ?, ?)`
+    )
+    db.prepare(
+      `DELETE FROM savings_payments
+       WHERE user_id = ? AND circle_id = ? AND kind = 'contribution' AND reference LIKE 'PH-%'`
+    ).run(demoUid, ayah)
+
+    const demoWeeks = [
+      ['2026-09-02', 200],
+      ['2026-08-26', 200],
+      ['2026-08-19', 200],
+      ['2026-08-12', 200],
+      ['2026-08-05', 200],
+      ['2026-07-29', 200],
+      ['2026-07-22', 200],
+      ['2026-07-15', 200],
+      ['2026-07-08', 200],
+      ['2026-07-01', 200],
+    ]
+    for (const [date, amount] of demoWeeks) {
+      ayahPay.run(demoUid, demoUid, 'Ama Owusu', ayah, 'Weekly contribution', amount, `PH-${date.replaceAll('-', '')}`, `${date} 08:30`)
+    }
+  }
+
+  const paidSeeded = db
+    .prepare(`SELECT COUNT(*) AS n FROM meta WHERE key = 'savings_demo_payments'`)
+    .get().n
+  if (ayah && paidSeeded === 0) {
+    const ayahRoster = SAVING_ROSTERS['Ayah Susu Circle'].members
+    const ayahPay = db.prepare(
+      `INSERT INTO savings_payments
+         (user_id, actor_id, actor_name, circle_id, kind, description, amount, method, reference, created_at)
+       VALUES (?, ?, ?, ?, 'contribution', ?, ?, 'paystack', ?, ?)`
+    )
+
+    const others = [
+      ['2026-09-02', 'Ama Serwaa'],
+      ['2026-09-02', 'Kofi Boateng'],
+      ['2026-09-02', 'Adjoa Mensah'],
+      ['2026-09-02', 'Kwame Owusu'],
+      ['2026-08-26', 'Efua Dede'],
+      ['2026-08-26', 'Yaw Asare'],
+    ]
+    for (const [date, name] of others) {
+      const userIdx = ayahRoster.indexOf(name)
+      if (userIdx === -1) continue
+      ayahPay.run(-100 - userIdx, -100 - userIdx, name, ayah, 'Weekly contribution', 200, `PH-${name.replaceAll(' ', '').slice(0, 4)}${date.slice(5, 7)}`, `${date} 09:00`)
+    }
+    const payoutIns = db.prepare(
+      `INSERT INTO savings_payments
+         (user_id, actor_id, actor_name, circle_id, kind, description, amount, method, reference, created_at)
+       VALUES (?, ?, ?, ?, 'payout', ?, ?, 'bank', ?, '2026-09-07 12:00')`
+    )
+    payoutIns.run(-100, -100, 'Ama Serwaa', ayah, 'Weekly payout (pot 12 × GH₵ 200)', 2400, 'PAY-0709')
+    db.prepare(`INSERT INTO meta (key, value) VALUES ('savings_demo_payments', '1')`).run()
+  }
+
+  const demoGoalCount = db
+    .prepare('SELECT COUNT(*) AS n FROM savings_goals WHERE user_id = ?')
+    .get(demoUid).n
+  if (demoGoalCount === 0) {
+    const goalIns = db.prepare(
+      'INSERT INTO savings_goals (user_id, name, tag, target, weekly, saved, next_due) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    )
+    goalIns.run(demoUid, 'New equipment fund', 'Beads workshop', 5000, 100, 1200, 'Sun, 13 Sep')
+    goalIns.run(demoUid, 'Shop rent buffer', '3-month cushion', 2400, 150, 900, 'Fri, 11 Sep')
+  }
+}
+
+seedDemoSavings()

@@ -1,14 +1,35 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTrackers } from '../../context/TrackersContext'
 import Icon from '../icons'
 import './Sidebar.css'
 
+const readSavedCount = () => {
+  try {
+    return (JSON.parse(localStorage.getItem('savedGrants')) || []).length
+  } catch {
+    return 0
+  }
+}
+
 function Sidebar() {
   const { user } = useAuth()
   const { trackers } = useTrackers()
+  const [savedCount, setSavedCount] = useState(readSavedCount)
   const firstName = (user?.name || 'Entrepreneur').split(' ')[0]
   const latestTracker = trackers[0]
+
+  useEffect(() => {
+    const refresh = () => setSavedCount(readSavedCount())
+    window.addEventListener('saved-grants-changed', refresh)
+    window.addEventListener('storage', refresh)
+    return () => {
+      window.removeEventListener('saved-grants-changed', refresh)
+      window.removeEventListener('storage', refresh)
+    }
+  }, [])
+
   const navGroups = [
     {
       label: 'Overview',
@@ -20,7 +41,12 @@ function Sidebar() {
         { to: '/suppliers', icon: 'users', label: 'Suppliers' },
         { to: '/savings', icon: 'wallet', label: 'Savings' },
         { to: '/finance', icon: 'chart', label: 'Finance' },
-        { to: '/grants', icon: 'target', label: 'Grants', badge: '4' },
+        {
+          to: '/grants',
+          icon: 'target',
+          label: 'Grants',
+          badge: savedCount > 0 ? String(savedCount) : undefined,
+        },
       ],
     },
     {
@@ -33,7 +59,6 @@ function Sidebar() {
       ],
     },
   ]
-
   return (
     <aside className="sidebar">
       <Link to="/dashboard" className="sidebar-logo">
