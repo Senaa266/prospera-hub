@@ -154,7 +154,7 @@ export function ChatBox({ initialPrompt = '', promptNonce = 0 }: ChatBoxProps) {
             onProvider: (provider: ChatProvider) => {
               if (provider === 'local') {
                 setNotice(
-                  'Live Gemini is not connected yet. Sena is answering from your words on the server. Add GEMINI_API_KEY to server/.env for the full model.',
+                  'Sena is answering offline with the built-in coach. Start the API (`npm run server`) and add GEMINI_API_KEY for the full model.',
                 )
               }
             },

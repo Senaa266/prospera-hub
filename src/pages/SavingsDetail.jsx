@@ -11,6 +11,7 @@ import { PageShell } from '../components/ui/PageShell'
 import { savings } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useSusuSecurity } from '../context/SusuSecurityContext'
+import { buildDemoSavingsDetail } from '../data/demoSavings'
 import './Feature.css'
 
 function fmt(n) {
@@ -116,7 +117,7 @@ function InviteBox({ circle, token, onInvited }) {
 function SavingsDetail() {
   const { id } = useParams()
   const { token, user } = useAuth()
-  const { restrictions, enableMandate, getCircle } = useSusuSecurity()
+  const { restrictions, enableMandate, getCircle, ensureCircle } = useSusuSecurity()
   const [circle, setCircle] = useState(null)
   const [loadError, setLoadError] = useState('')
   const [joinError, setJoinError] = useState('')
@@ -125,17 +126,25 @@ function SavingsDetail() {
 
   const load = useCallback(async () => {
     try {
-      const result = await savings.detail(id, token)
+      const result = await savings.detail(id, token || 'demo-token')
       setCircle(result.circle)
       setLoadError('')
     } catch (err) {
-      setLoadError(err.message || 'Could not load this circle')
+      const demo = buildDemoSavingsDetail(id)
+      setCircle(demo.circle)
+      setLoadError(
+        `${err.message || 'Could not load this circle'}. Showing a demo circle so the page stays usable.`,
+      )
     }
   }, [id, token])
 
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    if (circle) ensureCircle(circle)
+  }, [circle, ensureCircle])
 
   const joinCircle = async () => {
     setJoinError('')

@@ -1,11 +1,10 @@
 import type { ChatProvider, ChatRequest, ChatStreamEvent, ChatTrackerPayload } from '../types/chat.ts'
+import { buildLocalCoachReply } from '../lib/senaLocalCoach.js'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? '' : 'http://localhost:5000')
 
 /**
  * Parses a buffered SSE chunk list into typed events.
- * @param buffer - Raw text remaining from the previous read
- * @param chunk - Newly decoded stream text
  */
 function consumeSseBuffer(
   buffer: string,
@@ -44,25 +43,53 @@ export type StreamChatOptions = {
   onTracker?: (tracker: ChatTrackerPayload) => void
 }
 
+async function streamLocalFallback(
+  payload: ChatRequest,
+  options: StreamChatOptions,
+  noticeProvider: ChatProvider = 'local',
+): Promise<void> {
+  options.onProvider?.(noticeProvider)
+  const reply = buildLocalCoachReply(payload.messages || [], payload.userContext)
+  const parts = reply.split(/(\s+)/)
+  for (const part of parts) {
+    if (!part) continue
+    if (options.signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+    options.onDelta(part)
+    await new Promise((resolve) => window.setTimeout(resolve, 10))
+  }
+}
+
 /**
  * Streams Sena's reply from POST /api/ai/chat.
- * Provider keys stay on the server — this client only sends messages.
+ * Falls back to the on-device coach when the API is unreachable.
  */
 export async function streamChatCompletion(
   payload: ChatRequest,
   options: StreamChatOptions,
 ): Promise<void> {
-  const response = await fetch(`${API_URL}/api/ai/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${options.token}`,
-    },
-    body: JSON.stringify(payload),
-    signal: options.signal,
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}/api/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${options.token}`,
+      },
+      body: JSON.stringify(payload),
+      signal: options.signal,
+    })
+  } catch (error) {
+    if (options.signal?.aborted) throw error
+    await streamLocalFallback(payload, options)
+    return
+  }
 
   if (!response.ok) {
+    // Prefer local coaching over a dead-end error when the server rejects the call.
+    if (response.status >= 500 || response.status === 401 || response.status === 404) {
+      await streamLocalFallback(payload, options)
+      return
+    }
     let message = 'Sena is unavailable right now. Please try again.'
     try {
       const data = (await response.json()) as { message?: string }
@@ -74,7 +101,8 @@ export async function streamChatCompletion(
   }
 
   if (!response.body) {
-    throw new Error('Sena is unavailable right now. Please try again.')
+    await streamLocalFallback(payload, options)
+    return
   }
 
   const reader = response.body.getReader()
@@ -84,11 +112,21 @@ export async function streamChatCompletion(
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
+    const chunk = decoder.decode(value, { stream: true })
+    const parsed = consumeSseBuffer(buffer, chunk)
+    buffer = parsed.rest
+    for (const event of parsed.events) {
+      if (event.done) continue
+      if (event.error) throw new Error(event.error)
+      if (event.provider) options.onProvider?.(event.provider)
+      if (event.tracker) options.onTracker?.(event.tracker)
+      if (event.content) options.onDelta(event.content)
+    }
+  }
 
-    const decoded = consumeSseBuffer(buffer, decoder.decode(value, { stream: true }))
-    buffer = decoded.rest
-
-    for (const event of decoded.events) {
+  if (buffer.trim()) {
+    const parsed = consumeSseBuffer(buffer, '\n\n')
+    for (const event of parsed.events) {
       if (event.error) throw new Error(event.error)
       if (event.provider) options.onProvider?.(event.provider)
       if (event.tracker) options.onTracker?.(event.tracker)

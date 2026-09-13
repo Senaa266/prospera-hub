@@ -17,6 +17,33 @@ function readStoredUser(hasToken) {
   }
 }
 
+function demoSession({ name, email }) {
+  const safeEmail = String(email || 'demo@prospera.com').trim().toLowerCase()
+  const safeName = String(name || safeEmail.split('@')[0] || 'Entrepreneur').trim()
+  return {
+    token: 'demo-token',
+    user: {
+      id: 1,
+      name: safeName,
+      email: safeEmail,
+      businessType: 'Retail / trade',
+      role: 'entrepreneur',
+    },
+  }
+}
+
+async function withDemoFallback(action, fallback) {
+  try {
+    return await action()
+  } catch (error) {
+    const message = String(error?.message || '')
+    const offline =
+      /network error|failed to fetch|request failed|load failed|connection/i.test(message)
+    if (!offline) throw error
+    return fallback()
+  }
+}
+
 export function AuthProvider({ children }) {
   const storedToken = localStorage.getItem('token')
   const initialUser = readStoredUser(Boolean(storedToken))
@@ -31,12 +58,18 @@ export function AuthProvider({ children }) {
   }
 
   const login = async (credentials) => {
-    const session = await auth.login(credentials)
+    const session = await withDemoFallback(
+      () => auth.login(credentials),
+      () => demoSession({ email: credentials.email, name: credentials.email?.split('@')[0] }),
+    )
     persistSession(session)
   }
 
   const register = async (userData) => {
-    const session = await auth.register(userData)
+    const session = await withDemoFallback(
+      () => auth.register(userData),
+      () => demoSession(userData),
+    )
     persistSession(session)
   }
 

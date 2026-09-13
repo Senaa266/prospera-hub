@@ -45,17 +45,27 @@ function seedMembersForCircle(group) {
   })
 }
 
+function buildCircleRecord(group) {
+  return {
+    members: assignPayoutPriority(seedMembersForCircle(group)),
+    sharedSecurityPool: group.weekly * 2,
+    surchargePerMember: 0,
+    lastReallocation: null,
+    weekly: group.weekly,
+    membersCount: group.members,
+    name: group.name,
+  }
+}
+
 function defaultState() {
   const circles = {}
-  for (const group of GROUPS) {
-    const members = seedMembersForCircle(group)
-    circles[group.id] = {
-      members: assignPayoutPriority(members),
-      sharedSecurityPool: group.weekly * 2,
-      surchargePerMember: 0,
-      lastReallocation: null,
-    }
-  }
+  GROUPS.forEach((group, index) => {
+    const record = buildCircleRecord(group)
+    circles[group.id] = record
+    // API seed rows use 1-based numeric ids that map to the same demo circles.
+    circles[String(index + 1)] = record
+    circles[index + 1] = record
+  })
 
   return {
     mandates: [],
@@ -75,17 +85,43 @@ function defaultState() {
   }
 }
 
+function resolveCircleMeta(circleId, circleState) {
+  const fromGroups = GROUPS.find((g) => g.id === circleId || g.id === String(circleId))
+  if (fromGroups) return fromGroups
+  const idx = Number(circleId)
+  if (Number.isFinite(idx) && idx >= 1 && GROUPS[idx - 1]) return GROUPS[idx - 1]
+  if (circleState?.weekly) {
+    return {
+      id: String(circleId),
+      name: circleState.name || 'Circle',
+      weekly: circleState.weekly,
+      members: circleState.membersCount || circleState.members?.length || 8,
+      roster: (circleState.members || []).map((m) => ({ name: m.name, paid: m.paid })),
+    }
+  }
+  return null
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return defaultState()
     const parsed = JSON.parse(raw)
     const base = defaultState()
-    return {
+    const merged = {
       ...base,
       ...parsed,
       circles: { ...base.circles, ...(parsed.circles || {}) },
     }
+    GROUPS.forEach((group, index) => {
+      const record = merged.circles[group.id] || base.circles[group.id]
+      if (record) {
+        merged.circles[group.id] = record
+        merged.circles[String(index + 1)] = record
+        merged.circles[index + 1] = record
+      }
+    })
+    return merged
   } catch {
     return defaultState()
   }
@@ -142,11 +178,35 @@ export function SusuSecurityProvider({ children }) {
   const restrictions = platformRestrictions(userHasOpenDeficit, youBlacklisted)
 
   const api = useMemo(() => {
-    const getCircle = (circleId) => state.circles[circleId] || null
+    const getCircle = (circleId) =>
+      state.circles[circleId] || state.circles[String(circleId)] || null
+
+    const ensureCircle = (circleLike) => {
+      if (!circleLike?.id) return null
+      const existing = getCircle(circleLike.id)
+      if (existing) return existing
+      const key = String(circleLike.id)
+      const meta = {
+        id: key,
+        name: circleLike.name || 'Circle',
+        weekly: Number(circleLike.weekly) || 50,
+        members: Number(circleLike.members) || 8,
+        roster: (circleLike.roster || []).map((m) => ({
+          name: m.name,
+          paid: Boolean(m.paid),
+        })),
+      }
+      const record = buildCircleRecord(meta)
+      setState((current) => ({
+        ...current,
+        circles: { ...current.circles, [key]: record, [circleLike.id]: record },
+      }))
+      return record
+    }
 
     const enableMandate = ({ circleId, provider, rail, reference, amount, cadence }) => {
       const mandate = createStandingOrderMandate({
-        circleId,
+        circleId: String(circleId),
         provider,
         rail,
         reference,
@@ -154,20 +214,25 @@ export function SusuSecurityProvider({ children }) {
         cadence,
       })
       setState((current) => {
-        const circle = current.circles[circleId]
+        const circle = current.circles[circleId] || current.circles[String(circleId)]
         const nextMandates = [
           mandate,
           ...current.mandates.filter((m) => !(m.circleId === circleId && m.status === 'active')),
         ]
+        const key = String(circleId)
         const next = {
           ...current,
           mandates: nextMandates,
           circles: circle
             ? {
                 ...current.circles,
+                [key]: {
+                  ...circle,
+                  members: withMandateTrust(circle.members, nextMandates, key),
+                },
                 [circleId]: {
                   ...circle,
-                  members: withMandateTrust(circle.members, nextMandates, circleId),
+                  members: withMandateTrust(circle.members, nextMandates, key),
                 },
               }
             : current.circles,
@@ -182,12 +247,13 @@ export function SusuSecurityProvider({ children }) {
     }
 
     const lockCollateralForYou = (circleId) => {
-      const group = GROUPS.find((g) => g.id === circleId)
-      const circle = state.circles[circleId]
+      const circle = getCircle(circleId)
+      const group = resolveCircleMeta(circleId, circle)
       if (!group || !circle) return 0
       const amount = Math.round(group.weekly * group.members * 0.1)
       setState((current) => {
-        const c = current.circles[circleId]
+        const c = current.circles[circleId] || current.circles[String(circleId)]
+        const key = String(circleId)
         let members = [...c.members]
         const youIdx = members.findIndex((m) => m.id === 'you' || m.name === 'You')
         if (youIdx === -1) {
@@ -219,9 +285,9 @@ export function SusuSecurityProvider({ children }) {
             personalWallet: Math.max(0, current.personalWallet - amount),
             circles: {
               ...current.circles,
-              [circleId]: {
+              [key]: {
                 ...c,
-                members: withMandateTrust(members, current.mandates, circleId),
+                members: withMandateTrust(members, current.mandates, key),
                 sharedSecurityPool: c.sharedSecurityPool + Math.round(amount * 0.2),
               },
             },
@@ -235,9 +301,10 @@ export function SusuSecurityProvider({ children }) {
 
     const applyHitAndRun = (circleId, memberId, { blacklistYou = false } = {}) => {
       setState((current) => {
-        const group = GROUPS.find((g) => g.id === circleId)
-        const circle = current.circles[circleId]
+        const circle = current.circles[circleId] || current.circles[String(circleId)]
+        const group = resolveCircleMeta(circleId, circle)
         if (!group || !circle) return current
+        const key = String(circleId)
 
         let members = [...circle.members]
         let member = members.find((m) => m.id === memberId)
@@ -265,7 +332,7 @@ export function SusuSecurityProvider({ children }) {
         const deficit = flagHitAndRun({
           memberId: member.id,
           memberName: member.name,
-          circleId,
+          circleId: key,
           weekly: group.weekly,
           cyclesRemaining,
           payoutReceived,
@@ -296,6 +363,14 @@ export function SusuSecurityProvider({ children }) {
         const blacklist = [...new Set([...current.blacklistedMemberIds, member.id])]
         if (blacklistYou) blacklist.push('you')
 
+        const nextCircle = {
+          ...circle,
+          members: withMandateTrust(members, current.mandates, key),
+          sharedSecurityPool: Math.max(0, circle.sharedSecurityPool - cover.fromSecurityPool),
+          surchargePerMember: cover.temporarySurchargePerMember,
+          lastReallocation: { ...cover, at: new Date().toISOString(), deficitId: deficit.id },
+        }
+
         return pushAudit(
           {
             ...current,
@@ -303,13 +378,8 @@ export function SusuSecurityProvider({ children }) {
             deficits: [deficit, ...current.deficits.filter((d) => !(d.status === 'deficit' && d.memberId === member.id))],
             circles: {
               ...current.circles,
-              [circleId]: {
-                ...circle,
-                members: withMandateTrust(members, current.mandates, circleId),
-                sharedSecurityPool: Math.max(0, circle.sharedSecurityPool - cover.fromSecurityPool),
-                surchargePerMember: cover.temporarySurchargePerMember,
-                lastReallocation: { ...cover, at: new Date().toISOString(), deficitId: deficit.id },
-              },
+              [key]: nextCircle,
+              [circleId]: nextCircle,
             },
           },
           `Hit-and-run: ${member.name} owes GH₵ ${deficit.totalOwed}. Covered via collateral GH₵ ${cover.fromCollateral}, pool GH₵ ${cover.fromSecurityPool}, surcharge GH₵ ${cover.temporarySurchargePerMember}/member. Zero-loss=${cover.zeroLossGuaranteed}.`,
@@ -319,7 +389,7 @@ export function SusuSecurityProvider({ children }) {
     }
 
     const simulatePeerDefault = (circleId) => {
-      const circle = state.circles[circleId]
+      const circle = getCircle(circleId)
       const target =
         circle?.members.find((m) => m.status !== 'deficit' && m.id !== 'you') || circle?.members[0]
       if (!target) return
@@ -417,6 +487,7 @@ export function SusuSecurityProvider({ children }) {
       userHasOpenDeficit,
       restrictions,
       getCircle,
+      ensureCircle,
       enableMandate,
       lockCollateralForYou,
       simulatePeerDefault,

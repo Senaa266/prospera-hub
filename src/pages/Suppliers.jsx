@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { suppliers as suppliersApi } from '../api/client'
 import { AppButton } from '../components/ui/AppButton'
 import OfferModal from '../components/suppliers/OfferModal'
+import { DEMO_SUPPLIER_GROUPS, buildDemoSupplierDetail } from '../data/demoSuppliers'
 import './Feature.css'
 import './Suppliers.css'
 
@@ -41,29 +42,33 @@ function Suppliers() {
   const openGroup = useCallback(
     async (id) => {
       try {
-        const data = await suppliersApi.detail(id, token)
+        const data = await suppliersApi.detail(id, token || 'demo-token')
         setActive(data)
       } catch (e) {
-        setError(e.message)
+        setActive(buildDemoSupplierDetail(id))
+        setError(`${e.message || 'Could not load offer'}. Showing demo group detail.`)
       }
     },
-    [token]
+    [token],
   )
 
   const load = useCallback(async () => {
     try {
-      const data = await suppliersApi.list(token)
-      setGroups(data.supplierGroups)
+      const data = await suppliersApi.list(token || 'demo-token')
+      const list = Array.isArray(data.supplierGroups) ? data.supplierGroups : []
+      setGroups(list.length ? list : DEMO_SUPPLIER_GROUPS)
+      setError(list.length ? '' : 'No live offers yet — showing demo peer-supplier groups.')
       if (!autoOpenedRef.current) {
         autoOpenedRef.current = true
         const gid = searchParams.get('group')
         if (gid) {
-          const g = data.supplierGroups.find((x) => String(x.id) === gid)
+          const g = (list.length ? list : DEMO_SUPPLIER_GROUPS).find((x) => String(x.id) === gid)
           if (g) await openGroup(g.id)
         }
       }
     } catch (e) {
-      setError(e.message)
+      setGroups(DEMO_SUPPLIER_GROUPS)
+      setError(`${e.message || 'Could not reach suppliers API'}. Showing demo peer-supplier offers.`)
     } finally {
       setLoading(false)
     }

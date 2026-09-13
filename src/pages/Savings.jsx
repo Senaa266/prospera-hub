@@ -13,6 +13,7 @@ import { PageShell } from '../components/ui/PageShell'
 import { savings } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useSusuSecurity } from '../context/SusuSecurityContext'
+import { buildDemoSavingsOverview } from '../data/demoSavings'
 import './Feature.css'
 
 const STEPS = [
@@ -136,13 +137,20 @@ function Savings() {
   const [mandateOpen, setMandateOpen] = useState(false)
 
   const load = useCallback(async () => {
-    if (!token) return
+    if (!token) {
+      setData(buildDemoSavingsOverview())
+      setLoadError('Signed out — showing demo susu circles. Sign in to sync with the server.')
+      return
+    }
     try {
       const fresh = await savings.list(token)
       setData(fresh)
       setLoadError('')
     } catch (err) {
-      setLoadError(err.message || 'Could not load your savings')
+      setData(buildDemoSavingsOverview())
+      setLoadError(
+        `${err.message || 'Could not reach the savings API'}. Showing demo susu circles so you can keep exploring.`,
+      )
     }
   }, [token])
 
