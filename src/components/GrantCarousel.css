@@ -1,0 +1,83 @@
+.grant-carousel {
+  position: relative;
+  overflow: hidden;
+  margin: 0 -18px;
+  padding: 6px 18px 10px;
+}
+
+.grant-carousel::before,
+.grant-carousel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 46px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.grant-carousel::before {
+  left: 0;
+  background: linear-gradient(to right, var(--color-canvas, #f6f6fa), transparent);
+}
+
+.grant-carousel::after {
+  right: 0;
+  background: linear-gradient(to left, var(--color-canvas, #f6f6fa), transparent);
+}
+
+.grant-carousel-track {
+  display: flex;
+  width: max-content;
+  animation-name: grant-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.grant-carousel:hover .grant-carousel-track {
+  animation-play-state: paused;
+}
+
+.grant-carousel-set {
+  display: flex;
+  gap: 16px;
+  padding-right: 16px;
+}
+
+.grant-carousel-item {
+  flex: 0 0 300px;
+  width: 300px;
+}
+
+@media (max-width: 640px) {
+  .grant-carousel-item {
+    flex-basis: 264px;
+    width: 264px;
+  }
+}
+
+@keyframes grant-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grant-carousel-track {
+    animation: none;
+    width: auto;
+    overflow-x: auto;
+  }
+
+  .grant-carousel-set {
+    flex: 0 0 100%;
+  }
+
+  .grant-carousel-item {
+    flex: 0 0 300px;
+  }
+}

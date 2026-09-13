@@ -31,7 +31,11 @@ function discountPct(solo, group) {
 }
 
 function ordersFor(groupId) {
-  return db.prepare('SELECT * FROM supplier_orders WHERE group_id = ? ORDER BY host DESC, id').all(groupId)
+  return db
+    .prepare(
+      "SELECT * FROM supplier_orders WHERE group_id = ? ORDER BY (status = 'active') DESC, id"
+    )
+    .all(groupId)
 }
 
 function activeUnits(groupId) {
@@ -61,32 +65,47 @@ function toDirectory(g, viewerId) {
   const total = activeUnits(g.id)
   const members = ordersFor(g.id)
   const myOrder = members.find((m) => m.user_id === viewerId)
-  const amHost = Boolean(myOrder?.host) && myOrder.status === 'active'
+  const amSupplier = Boolean(g.supplier_user_id && g.supplier_user_id === viewerId)
   const pending = members.filter((m) => m.status === 'pending')
+  const cap = g.max_units ?? g.min_orders ?? 1
+  const unlocked = total > cap
   return {
     id: g.id,
     product: g.product,
     supplier: g.supplier,
+    supplierUserId: g.supplier_user_id,
+    amSupplier,
     category: g.category || 'General',
     unit: g.unit || 'unit',
     description: g.description || '',
     soloPrice: g.solo_price,
     groupPrice: g.group_price,
-    minOrders: g.min_orders,
+    minOrders: cap,
+    maxUnits: cap,
+    unlockGoal: cap + 1,
     discountPct: discountPct(g.solo_price, g.group_price),
     committedUnits: total,
     activeMembers: members.filter((m) => m.status === 'active').length,
-    pendingCount: amHost ? pending.length : 0,
-    pendingUnits: amHost ? pending.reduce((s, p) => s + p.qty, 0) : 0,
-    unlocked: total >= g.min_orders,
+    pendingCount: amSupplier ? pending.length : 0,
+    pendingUnits: amSupplier ? pending.reduce((s, p) => s + p.qty, 0) : 0,
+    unlocked,
+    unitPrice: unlocked ? g.group_price : g.solo_price,
     status: g.status,
+    fulfilledAt: g.fulfilled_at || null,
     myStatus: myOrder ? myOrder.status : 'none',
     myOrder: myOrder
       ? { status: myOrder.status, qty: myOrder.qty, isHost: Boolean(myOrder.host) }
       : null,
-    amHost,
     createdAt: g.created_at,
   }
+}
+
+function supplierOnly(res, group, userId) {
+  if (!group.supplier_user_id || group.supplier_user_id !== userId) {
+    res.status(403).json({ message: 'Only the supplier who listed this offer can do that' })
+    return false
+  }
+  return true
 }
 
 export function listSupplierGroups(req, res) {
@@ -103,7 +122,6 @@ export function getSupplierGroup(req, res) {
 
   const members = reduceMembers(group.id)
   const myOrder = members.find((m) => m.userId === req.user.id) || null
-  const amHost = Boolean(myOrder?.isHost) && myOrder.status === 'active'
   const total = activeUnits(group.id)
 
   const messages = db
@@ -125,7 +143,6 @@ export function getSupplierGroup(req, res) {
       ...toDirectory(group, req.user.id),
       members,
       myOrder,
-      amHost,
       committedValue: group.group_price * total,
       soloValue: group.solo_price * total,
       messages,
@@ -134,30 +151,48 @@ export function getSupplierGroup(req, res) {
 }
 
 export function createSupplierGroup(req, res) {
-  const { product, supplier, category, unit, description, soloPrice, groupPrice, minOrders } = req.body
+  const { product, category, unit, description, soloPrice, groupPrice, maxUnits, minOrders } = req.body
 
-  if (!product || !soloPrice || !groupPrice || !minOrders) {
-    return res.status(400).json({ message: 'Product, prices and min orders are required' })
+  if (!product || typeof product !== 'string') {
+    return res.status(400).json({ message: 'Product name is required' })
+  }
+  const solo = Number(soloPrice)
+  const group = Number(groupPrice)
+  const capRaw = Number(maxUnits) > 0 ? Number(maxUnits) : Number(minOrders) > 0 ? Number(minOrders) : 0
+  const cap = Math.max(Math.round(capRaw), 0)
+  if (!(solo > 0) || !(group > 0)) {
+    return res.status(400).json({ message: 'Solo and group prices are required' })
+  }
+  if (group >= solo) {
+    return res.status(400).json({ message: 'Group price must be below the solo price' })
+  }
+  if (!(cap >= 1)) {
+    return res.status(400).json({
+      message: 'Set a max unit cap — the group price only kicks in once combined units exceed it',
+    })
   }
 
+  const me = db.prepare('SELECT name, business_type FROM users WHERE id = ?').get(req.user.id)
   const info = db
     .prepare(
-      `INSERT INTO supplier_groups (product, supplier, category, unit, description, solo_price, group_price, min_orders, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open')`
+      `INSERT INTO supplier_groups (product, supplier, supplier_user_id, category, unit, description, solo_price, group_price, min_orders, max_units, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')`
     )
     .run(
       product,
-      supplier || 'Group supplier',
+      me?.name || req.user.name || 'Prospera supplier',
+      req.user.id,
       category || 'General',
       unit || 'unit',
       description || '',
-      Number(soloPrice),
-      Number(groupPrice),
-      Math.max(Number(minOrders), 1)
+      solo,
+      group,
+      cap,
+      cap
     )
 
-  const group = db.prepare('SELECT * FROM supplier_groups WHERE id = ?').get(info.lastInsertRowid)
-  res.status(201).json({ group: toDirectory(group, req.user.id) })
+  const row = db.prepare('SELECT * FROM supplier_groups WHERE id = ?').get(info.lastInsertRowid)
+  res.status(201).json({ group: toDirectory(row, req.user.id) })
 }
 
 export function joinSupplierGroup(req, res) {
@@ -165,18 +200,17 @@ export function joinSupplierGroup(req, res) {
   const group = groupOr404(res, groupId)
   if (!group) return
   if (group.status !== 'open') {
-    return res.status(400).json({ message: 'This group is closed' })
+    return res.status(400).json({ message: 'This offer is no longer open' })
+  }
+  if (group.supplier_user_id === req.user.id) {
+    return res.status(400).json({ message: 'You are the supplier of this offer' })
   }
 
   const existing = db
     .prepare('SELECT * FROM supplier_orders WHERE group_id = ? AND user_id = ?')
     .get(group.id, req.user.id)
-  const members = ordersFor(group.id)
-  const active = members.filter((m) => m.status === 'active')
 
   if (existing) {
-    const isActive = existing.status === 'active'
-    const isHost = Boolean(existing.host)
     const nextQty = Math.max(Number(qty) || existing.qty, 1)
     db.prepare('UPDATE supplier_orders SET qty = ?, note = ? WHERE id = ?').run(
       nextQty,
@@ -189,59 +223,34 @@ export function joinSupplierGroup(req, res) {
     }
     return res.json({
       result: 'updated',
-      pending: !isActive && !isHost,
+      pending: existing.status === 'pending',
       group: groupRow,
-      myOrder: { status: existing.status, qty: nextQty, isHost },
+      myOrder: { status: existing.status, qty: nextQty },
     })
   }
 
-  let status = 'active'
-  let host = 0
-  if (active.length > 0) {
-    const isHostAlready = active.some((m) => m.user_id === req.user.id)
-    if (!isHostAlready) status = 'pending'
-  } else {
-    host = 1
-  }
-
+  const status = group.supplier_user_id ? 'pending' : 'active'
   db.prepare(
-    'INSERT INTO supplier_orders (group_id, user_id, qty, host, status, note) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(
-    group.id,
-    req.user.id,
-    Math.max(Number(qty) || 1, 1),
-    host,
-    status,
-    note || ''
-  )
+    'INSERT INTO supplier_orders (group_id, user_id, qty, host, status, note) VALUES (?, ?, ?, 0, ?, ?)'
+  ).run(group.id, req.user.id, Math.max(Number(qty) || 1, 1), status, note || '')
 
   const next = toDirectory(group, req.user.id)
   res.json({
     result: status === 'active' ? 'joined' : 'pending',
     pending: status === 'pending',
-    amHost: Boolean(host),
     group: { ...next, members: reduceMembers(group.id) },
-    myOrder: { status, isHost: Boolean(host) },
+    myOrder: { status, isHost: false },
   })
-}
-
-function hostOnly(res, groupId, userId) {
-  const order = db
-    .prepare("SELECT * FROM supplier_orders WHERE group_id = ? AND user_id = ? AND host = 1 AND status = 'active'")
-    .get(groupId, userId)
-  if (!order) {
-    res.status(403).json({ message: 'Only the host can do that' })
-    return null
-  }
-  return order
 }
 
 export function approveMember(req, res) {
   const group = groupOr404(res, req.params.id)
   if (!group) return
-  if (!hostOnly(res, group.id, req.user.id)) return
+  if (!supplierOnly(res, group, req.user.id)) return
 
-  const order = db.prepare('SELECT * FROM supplier_orders WHERE id = ? AND group_id = ?').get(Number(req.body.orderId), group.id)
+  const order = db
+    .prepare('SELECT * FROM supplier_orders WHERE id = ? AND group_id = ?')
+    .get(Number(req.body.orderId), group.id)
   if (!order || order.status !== 'pending') {
     return res.status(404).json({ message: 'Pending request not found' })
   }
@@ -257,9 +266,11 @@ export function approveMember(req, res) {
 export function rejectMember(req, res) {
   const group = groupOr404(res, req.params.id)
   if (!group) return
-  if (!hostOnly(res, group.id, req.user.id)) return
+  if (!supplierOnly(res, group, req.user.id)) return
 
-  const order = db.prepare('SELECT * FROM supplier_orders WHERE id = ? AND group_id = ?').get(Number(req.body.orderId), group.id)
+  const order = db
+    .prepare('SELECT * FROM supplier_orders WHERE id = ? AND group_id = ?')
+    .get(Number(req.body.orderId), group.id)
   if (!order || order.status !== 'pending') {
     return res.status(404).json({ message: 'Pending request not found' })
   }
@@ -276,7 +287,7 @@ export function updateShare(req, res) {
     .prepare("SELECT * FROM supplier_orders WHERE group_id = ? AND user_id = ? AND status = 'active'")
     .get(group.id, req.user.id)
   if (!order) {
-    return res.status(403).json({ message: 'Join the collaboration first' })
+    return res.status(403).json({ message: 'Join the group buy first' })
   }
 
   const qty = Math.max(Number(req.body.qty) || 1, 1)
@@ -286,6 +297,47 @@ export function updateShare(req, res) {
     ok: true,
     qty,
     group: { ...toDirectory(group, req.user.id), members: reduceMembers(group.id) },
+  })
+}
+
+export function fulfillSupplierGroup(req, res) {
+  const group = groupOr404(res, req.params.id)
+  if (!group) return
+  if (!supplierOnly(res, group, req.user.id)) return
+
+  const total = activeUnits(group.id)
+  const cap = group.max_units ?? group.min_orders ?? 1
+  if (total <= cap) {
+    return res.status(400).json({
+      message: `The group price is not eligible yet — combined units must exceed the cap of ${cap}, currently ${total}`,
+    })
+  }
+
+  const active = ordersFor(group.id).filter((r) => r.status === 'active')
+  const ins = db.prepare(
+    'INSERT INTO transactions (user_id, type, description, amount, date) VALUES (?, ?, ?, ?, ?)'
+  )
+  for (const order of active) {
+    ins.run(
+      order.user_id,
+      'expense',
+      `${group.product} × ${order.qty} — ${group.supplier} group buy`,
+      group.group_price * order.qty,
+      new Date().toISOString().slice(0, 10)
+    )
+  }
+
+  db.prepare("UPDATE supplier_groups SET status = 'fulfilled', fulfilled_at = ? WHERE id = ?").run(
+    new Date().toISOString(),
+    group.id
+  )
+
+  const updated = db.prepare('SELECT * FROM supplier_groups WHERE id = ?').get(group.id)
+  res.json({
+    ok: true,
+    fulfilledAt: new Date().toISOString(),
+    notes: active.map((o) => ({ userId: o.user_id, qty: o.qty })),
+    group: { ...toDirectory(updated, req.user.id), members: reduceMembers(group.id) },
   })
 }
 
@@ -318,20 +370,24 @@ export function postMessage(req, res) {
     return res.status(400).json({ message: 'Message is required' })
   }
 
-  const channel = req.body.channel === 'supplier' ? 'supplier' : 'team'
+  const amSupplier = group.supplier_user_id === req.user.id
+  const channel = amSupplier ? 'supplier' : req.body.channel === 'supplier' ? 'supplier' : 'team'
+  const senderType = amSupplier ? 'supplier' : 'buyer'
+  const senderName = nameFor(req.user.id)
+
   const info = db
     .prepare(
       'INSERT INTO supplier_thread (group_id, channel, sender_user_id, sender_type, sender_name, message) VALUES (?, ?, ?, ?, ?, ?)'
     )
-    .run(group.id, channel, req.user.id, 'buyer', nameFor(req.user.id), text)
+    .run(group.id, channel, amSupplier ? null : req.user.id, senderType, senderName, text)
 
   res.status(201).json({
     message: {
       id: info.lastInsertRowid,
       channel,
-      senderType: 'buyer',
-      senderName: nameFor(req.user.id),
-      senderId: req.user.id,
+      senderType,
+      senderName,
+      senderId: amSupplier ? null : req.user.id,
       text,
       createdAt: new Date().toISOString(),
     },

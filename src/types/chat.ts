@@ -21,12 +21,31 @@ export interface FinancialSnapshot {
   notes?: string
 }
 
+/** A grant the user is looking at or pursuing. Sent with chat so Sena can advise on it. */
+export interface GrantContextItem {
+  id?: number | string
+  title?: string
+  amount?: string
+  amountMax?: number
+  description?: string
+  eligibility?: string
+  deadline?: string
+  type?: string
+  region?: string
+  source?: string
+  externalUrl?: string
+}
+
 /** Optional profile + books context sent with each chat request. */
 export interface UserContext {
   name?: string
   country?: string
   businessName?: string
   financialSnapshot?: FinancialSnapshot
+  /** The grant currently being considered; makes Sena answers grant-specific. */
+  activeGrant?: GrantContextItem
+  /** Grants currently on screen, for fit/ranking questions. */
+  grants?: GrantContextItem[]
 }
 
 /** POST body for `/api/ai/chat`. */

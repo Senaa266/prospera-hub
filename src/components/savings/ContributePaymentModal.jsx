@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react'
 import Icon from '../icons'
+import { savings } from '../../api/client'
 import { AppButton } from '../ui/AppButton'
 import { Modal } from '../ui/Modal'
+
+const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
 
 const METHODS = [
   {
@@ -34,12 +37,17 @@ function findProvider(id) {
 }
 
 /**
- * Multi-step contribute flow for susu circles (demo confirmation, no live rails).
+ * Contribution checkout. When VITE_PAYSTACK_PUBLIC_KEY is set, a Paystack inline
+ * popup is used; otherwise the same flow runs in demo mode and every payment is
+ * still recorded on the server so it shows up in savings.
  */
 export function ContributePaymentModal({
   open,
   onClose,
-  circleName,
+  circle,
+  goal,
+  token,
+  email,
   defaultAmount = 200,
   onSuccess,
 }) {
@@ -49,14 +57,16 @@ export function ContributePaymentModal({
   const [amount, setAmount] = useState(String(defaultAmount))
   const [reference, setReference] = useState('')
   const [busy, setBusy] = useState(false)
-  const [receipt, setReceipt] = useState('')
-  const [payError, setPayError] = useState('')
+  const [error, setError] = useState('')
+  const [receipt, setReceipt] = useState({ ref: '', account: null })
 
   const method = METHODS.find((item) => item.id === methodId)
   const selected = findProvider(providerId)
   const parsedAmount = Number(amount)
   const amountOk = Number.isFinite(parsedAmount) && parsedAmount > 0
-  const referenceOk = reference.trim().length >= 8
+  const referenceOk = reference.trim().length >= 6
+  const targetLabel = circle?.name || goal?.name || 'your savings'
+  const liveMode = Boolean(PAYSTACK_KEY)
 
   const reset = () => {
     setStep('method')
@@ -65,8 +75,8 @@ export function ContributePaymentModal({
     setAmount(String(defaultAmount))
     setReference('')
     setBusy(false)
-    setReceipt('')
-    setPayError('')
+    setError('')
+    setReceipt({ ref: '', account: null })
   }
 
   const close = () => {
@@ -78,23 +88,67 @@ export function ContributePaymentModal({
     if (step === 'success') return 'Payment confirmed'
     if (step === 'details') return `Pay with ${selected?.provider.name || 'provider'}`
     if (step === 'provider') return method?.label || 'Choose a provider'
-    return `Contribute to ${circleName}`
-  }, [step, selected, method, circleName])
+    return `Contribute to ${targetLabel}`
+  }, [step, selected, method, targetLabel])
+
+  const recordOnServer = async (ref) => {
+    const result = await savings.payNow(
+      {
+        circleId: circle?.id,
+        goalId: goal?.id,
+        amount: parsedAmount,
+        method: selected?.method.id === 'momo' ? 'paystack' : selected?.provider.id || 'bank',
+        reference: ref,
+      },
+      token
+    )
+    return result
+  }
 
   const confirm = async () => {
-    if (!amountOk || !referenceOk) return
+    if (!amountOk || !referenceOk || busy) return
     setBusy(true)
-    setPayError('')
-    try {
-      await new Promise((resolve) => window.setTimeout(resolve, 700))
-      const code = `PH-${Date.now().toString().slice(-6)}`
-      setReceipt(code)
-      setStep('success')
-      onSuccess?.(parsedAmount)
-    } catch {
-      setPayError('Payment could not be confirmed. Check your details and try again.')
-    } finally {
+    setError('')
+
+    const attempt = async (ref) => {
+      const result = await recordOnServer(ref)
+      setReceipt({ ref: result.payment?.reference || ref, account: result.account })
       setBusy(false)
+      setStep('success')
+      onSuccess?.({ amount: parsedAmount, reference: result.payment?.reference || ref, account: result.account })
+    }
+
+    try {
+      if (liveMode && typeof window.PaystackPop !== 'undefined') {
+        const baseRef = `PS-${Date.now().toString().slice(-8)}`
+        const popup = window.PaystackPop.newSetup({
+          key: PAYSTACK_KEY,
+          email: email || 'customer@prospera.demo',
+          amount: parsedAmount * 100,
+          currency: 'GHS',
+          ref: baseRef,
+          metadata: {
+            circle_id: circle?.id || null,
+            goal_id: goal?.id || null,
+            custom_fields: [{ display_name: 'Saved to', variable_name: 'saved_to', value: targetLabel }],
+          },
+          callback: (response) => {
+            void attempt(response.reference)
+          },
+          onClose: () => {
+            setBusy(false)
+          },
+        })
+        popup.openIframe()
+        return
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, 900))
+      const code = `PH-${Date.now().toString().slice(-6)}`
+      await attempt(code)
+    } catch (err) {
+      setBusy(false)
+      setError(err.message || 'Payment could not be completed')
     }
   }
 
@@ -103,8 +157,8 @@ export function ContributePaymentModal({
       {step === 'method' && (
         <div className="grid gap-3">
           <p className="m-0 text-sm text-muted">
-            Choose how you want to send this week&apos;s contribution. You will confirm the
-            amount before anything is recorded.
+            Choose how you want to send this payment to {targetLabel}. You will confirm the amount
+            before anything is recorded.
           </p>
           {METHODS.map((item) => (
             <button
@@ -164,10 +218,14 @@ export function ContributePaymentModal({
             void confirm()
           }}
         >
-          <p className="m-0 rounded-2xl bg-canvas px-4 py-3 text-sm text-muted">
-            You are paying <strong className="text-ink">{circleName}</strong> via{' '}
-            <strong className="text-ink">{selected.provider.name}</strong>. This demo records the
-            contribution locally — no live debit is sent.
+          <p className="m-0 rounded-2xl bg-canvas px-4 py-3 text-sm leading-6 text-muted">
+            You are paying <strong className="text-ink">{targetLabel}</strong> via{' '}
+            <strong className="text-ink">{selected.provider.name}</strong>.
+            {liveMode ? (
+              <> Paystack will open a secure checkout, and your savings update the moment it confirms.</>
+            ) : (
+              <> This demo checks out instantly and records the payment in your savings.</>
+            )}
           </p>
           <label className="grid gap-1.5 text-sm font-semibold text-ink">
             Amount (GH₵)
@@ -177,7 +235,7 @@ export function ContributePaymentModal({
               step="1"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="rounded-xl border border-line bg-card px-3 py-2.5 text-base font-medium text-ink"
+              className="rounded-xl border border-line bg-white px-3 py-2.5 text-base font-medium text-ink"
               required
             />
           </label>
@@ -189,18 +247,14 @@ export function ContributePaymentModal({
               placeholder={selected.method.id === 'momo' ? '024 XXX XXXX' : 'Account number'}
               value={reference}
               onChange={(event) => setReference(event.target.value)}
-              className="rounded-xl border border-line bg-card px-3 py-2.5 text-base font-medium text-ink"
+              className="rounded-xl border border-line bg-white px-3 py-2.5 text-base font-medium text-ink"
               required
             />
           </label>
-          {payError ? (
-            <p className="m-0 text-sm font-medium text-rose-700" role="alert">
-              {payError}
-            </p>
-          ) : null}
+          {error && <p className="m-0 text-sm font-semibold text-red-600">{error}</p>}
           <div className="flex flex-wrap gap-2">
             <AppButton type="submit" disabled={!amountOk || !referenceOk || busy}>
-              {busy ? 'Confirming…' : `Confirm GH₵ ${amountOk ? parsedAmount : '—'}`}
+              {busy ? 'Processing…' : `Pay GH₵ ${amountOk ? parsedAmount.toLocaleString() : '—'}`}
             </AppButton>
             <AppButton variant="outline" onClick={() => setStep('provider')}>
               Change provider
@@ -215,8 +269,8 @@ export function ContributePaymentModal({
             <Icon name="check" size={22} />
           </div>
           <p className="m-0 text-sm leading-6 text-muted">
-            GH₵ {parsedAmount.toLocaleString()} to {circleName} is marked as paid via{' '}
-            {selected?.provider.name}. Reference <strong className="text-ink">{receipt}</strong>.
+            {`GH₵ ${parsedAmount.toLocaleString()}`} to {targetLabel} is recorded via{' '}
+            {selected?.provider.name}. Reference <strong className="text-ink">{receipt.ref}</strong>.
           </p>
           <AppButton onClick={close}>Done</AppButton>
         </div>

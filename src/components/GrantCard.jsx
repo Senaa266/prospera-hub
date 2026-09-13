@@ -22,7 +22,7 @@ const writeSaved = (id, saved) => {
   }
 }
 
-function GrantCard({ grant, saved, onToggleSaved }) {
+function GrantCard({ grant, saved, onToggleSaved, onAskAi }) {
   const id = grant.id ?? grant.title
   const controlled = saved !== undefined && typeof onToggleSaved === 'function'
   const [localSaved, setLocalSaved] = useState(() => readSaved(id))
@@ -92,6 +92,17 @@ function GrantCard({ grant, saved, onToggleSaved }) {
       <p className="grant-desc">{grant.description}</p>
 
       <div className="grant-foot">
+        {typeof onAskAi === 'function' && (
+          <button
+            className="btn-ask-ai"
+            type="button"
+            onClick={() => onAskAi(grant)}
+            aria-label={`Ask Sena about ${grant.title}`}
+          >
+            <Icon name="sparkles" size={14} />
+            Ask AI
+          </button>
+        )}
         <a
           className="btn-explore"
           href={grant.externalUrl || '#'}

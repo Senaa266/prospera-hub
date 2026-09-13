@@ -8,7 +8,8 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { GrantSkeleton } from '../components/ui/Skeleton'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PageShell } from '../components/ui/PageShell'
-import { loadGrants } from '../utils/grants'
+import { useChat } from '../context/ChatContext'
+import { askAboutGrantPrompt, loadGrants } from '../utils/grants'
 import { DEMO_GRANTS } from '../data/grants'
 
 function Grants() {
@@ -19,6 +20,8 @@ function Grants() {
   const [query, setQuery] = useState('')
   const [type, setType] = useState('All')
   const [sort, setSort] = useState('deadline')
+  const [view, setView] = useState('all')
+  const { open } = useChat()
   const [saved, setSaved] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('savedGrants')) || []
@@ -58,7 +61,9 @@ function Grants() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
+    const ids = new Set(saved.map(String))
     let list = grants.filter((g) => {
+      if (view === 'saved' && !ids.has(String(g.id ?? g.title))) return false
       const haystack = `${g.title} ${g.description} ${g.source || ''} ${g.region || ''}`.toLowerCase()
       return (!q || haystack.includes(q)) && (type === 'All' || g.type === type)
     })
@@ -74,12 +79,13 @@ function Grants() {
       list = [...list].sort((a, b) => (b.id || 0) - (a.id || 0))
     }
     return list
-  }, [grants, query, type, sort])
+  }, [grants, query, type, sort, saved, view])
 
   const toggleSaved = (id) => {
     setSaved((prev) => {
       const next = prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev]
       localStorage.setItem('savedGrants', JSON.stringify(next))
+      window.dispatchEvent(new Event('saved-grants-changed'))
       return next
     })
   }
@@ -113,11 +119,36 @@ function Grants() {
       {loadError && !loading ? (
         <div className="mb-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
           <Icon name="external" size={16} />
-          <p className="m-0">{loadError}</p>
+          <p className="m-0">
+            <strong>Offline.</strong> We couldn&apos;t reach the live funding feed — showing the
+            curated grant list instead.
+          </p>
         </div>
       ) : null}
 
-      <div className="mb-4 rounded-2xl border border-line bg-card p-4 shadow-[var(--shadow-card)]">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex rounded-xl border border-line bg-white p-1 shadow-[var(--shadow-card)]">
+          {[
+            { key: 'all', label: 'All grants' },
+            { key: 'saved', label: `Saved (${saved.length})` },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setView(tab.key)}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                view === tab.key
+                  ? 'bg-ink-strong text-white shadow-[var(--shadow-card)]'
+                  : 'text-muted hover:text-ink'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-4 rounded-2xl border border-line bg-white p-4 shadow-[var(--shadow-card)]">
         <div className="mb-3 flex flex-wrap gap-3">
           <label className="relative min-w-[220px] flex-1">
             <span className="sr-only">Search grants</span>
@@ -166,7 +197,7 @@ function Grants() {
 
       <div className="mb-3 flex items-center justify-between text-sm text-muted">
         <span>
-          {filtered.length} grant{filtered.length === 1 ? '' : 's'}
+          {filtered.length} {view === 'saved' ? 'saved ' : ''}grant{filtered.length === 1 ? '' : 's'}
           {type !== 'All' && ` · ${type}`}
         </span>
         <span className="inline-flex items-center gap-1 font-semibold">
@@ -178,23 +209,43 @@ function Grants() {
       <div className="grid gap-4 md:grid-cols-2">
         {loading
           ? [1, 2, 3, 4].map((key) => <GrantSkeleton key={key} />)
-          : filtered.map((g) => {
-              const id = g.id ?? g.title
-              return (
-                <GrantCard key={id} grant={g} saved={saved.includes(id)} onToggleSaved={toggleSaved} />
-              )
-            })}
+: filtered.map((g) => {
+                const id = g.id ?? g.title
+                return (
+                  <GrantCard
+                    key={id}
+                    grant={g}
+                    saved={saved.includes(id)}
+                    onToggleSaved={toggleSaved}
+                    onAskAi={(grant) => open(askAboutGrantPrompt(grant), grant)}
+                  />
+                )
+              })}
       </div>
 
-      {!loading && filtered.length === 0 ? (
-        <EmptyState
-          icon="search"
-          title="No grants match your filters"
-          description="Try a different keyword or reset the filters."
-          actionLabel="Reset filters"
-          onAction={resetFilters}
-        />
-      ) : null}
+      {!loading && filtered.length === 0 && (
+        <div className="mt-8 text-center">
+          <Icon name={view === 'saved' ? 'bookmark' : 'search'} size={30} />
+          <h3 className="mt-2 text-ink-strong">
+            {view === 'saved' && saved.length === 0
+              ? 'No saved grants yet'
+              : 'No grants match your filters'}
+          </h3>
+          <p className="text-muted">
+            {view === 'saved' && saved.length === 0
+              ? 'Bookmark grants and they will stay here for quick access.'
+              : 'Try a different keyword or reset the filters.'}
+          </p>
+          {view === 'saved' && saved.length === 0 ? (
+            <AppButton onClick={() => setView('all')}>
+              Browse all grants
+              <Icon name="arrowRight" size={16} />
+            </AppButton>
+          ) : (
+            <AppButton onClick={resetFilters}>Reset filters</AppButton>
+          )}
+        </div>
+      )}
 
       <div className="mt-8">
         <AIOffer

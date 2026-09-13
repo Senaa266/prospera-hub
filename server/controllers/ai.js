@@ -27,6 +27,40 @@ export function buildSystemMessage(userContext) {
     )
   }
 
+  const grant = userContext.activeGrant
+  if (grant && grant.title) {
+    const compact = {
+      title: grant.title,
+      amount: grant.amount,
+      eligibility: (grant.eligibility || '').slice(0, 220),
+      deadline: grant.deadline,
+      type: grant.type,
+      region: grant.region,
+      source: grant.source,
+      externalUrl: grant.externalUrl,
+      description: (grant.description || '').slice(0, 220),
+    }
+    lines.push(
+      `- Grant ${grant.title ? 'the entrepreneur is considering' : 'in view'}: ${JSON.stringify(compact)}. When the user asks about this grant, ground your answer in these exact facts; for anything unknown, say so and point to the externalUrl.`,
+    )
+  }
+
+  if (Array.isArray(userContext.grants) && userContext.grants.length) {
+    const listed = userContext.grants
+      .slice(0, 15)
+      .map((g) =>
+        JSON.stringify({
+          title: g.title,
+          amount: g.amount,
+          source: g.source,
+          deadline: g.deadline,
+          type: g.type,
+        }),
+      )
+      .join('\n    - ')
+    lines.push(`- Grants currently visible to this entrepreneur:\n  - ${listed}`)
+  }
+
   return lines.length > 2 ? `${PROSPERA_SYSTEM_PROMPT}\n${lines.join('\n')}` : PROSPERA_SYSTEM_PROMPT
 }
 

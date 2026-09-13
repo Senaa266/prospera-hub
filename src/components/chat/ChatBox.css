@@ -334,6 +334,9 @@
   border-radius: 12px;
   background: #ffffff;
   color: #8a8a96;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chat-voice-btn.listening {

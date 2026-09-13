@@ -11,12 +11,31 @@ const financialSnapshotSchema = z
   .strict()
   .optional()
 
+const grantContextSchema = z
+  .object({
+    id: z.union([z.string().max(120), z.number()]).nullish(),
+    title: z.string().max(200).nullish(),
+    description: z.string().max(2000).nullish(),
+    amount: z.union([z.string().max(120), z.number()]).nullish(),
+    amountMax: z.number().nullish(),
+    eligibility: z.string().max(2000).nullish(),
+    deadline: z.string().max(80).nullish(),
+    type: z.string().max(80).nullish(),
+    region: z.string().max(160).nullish(),
+    source: z.string().max(160).nullish(),
+    externalUrl: z.string().max(500).nullish(),
+    imageUrl: z.string().max(500).nullish(),
+  })
+  .passthrough()
+
 const userContextSchema = z
   .object({
     name: z.string().max(120).optional(),
     country: z.string().max(80).optional(),
     businessName: z.string().max(160).optional(),
     financialSnapshot: financialSnapshotSchema,
+    activeGrant: grantContextSchema.optional(),
+    grants: z.array(grantContextSchema).max(50).optional(),
   })
   .strict()
   .optional()
@@ -33,6 +52,6 @@ const chatMessageSchema = z.object({
 export const chatRequestSchema = z
   .object({
     messages: z.array(chatMessageSchema).min(1).max(40),
-    userContext: userContextSchema,
+    userContext: userContextSchema.optional(),
   })
   .strict()

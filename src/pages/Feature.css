@@ -421,13 +421,13 @@
   margin: 0;
   color: #111114;
   font-size: 1.18rem;
-  font-weight: 800;
+  font-weight: 650;
   letter-spacing: -0.2px;
 }
 
 .gc-amount {
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 650;
   color: #111114;
   letter-spacing: -0.3px;
   margin: 14px 0 8px;
@@ -455,7 +455,7 @@
 
 .gc-meta strong {
   color: #111114;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .progress-bar {
@@ -496,7 +496,7 @@
 
 .gc-saved-row strong {
   color: #111114;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .gc-foot {
@@ -724,16 +724,37 @@
   border-radius: 18px;
   padding: 24px;
   box-shadow: 0 4px 14px rgba(16, 8, 12, 0.04);
+  animation: step-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.22s, box-shadow 0.22s;
+}
+
+.how-step:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(20, 8, 14, 0.1);
 }
 
 .how-step:nth-child(1) {
   background: #fbe3ef;
+  animation-delay: 0.05s;
 }
 .how-step:nth-child(2) {
   background: #dbe9fd;
+  animation-delay: 0.15s;
 }
 .how-step:nth-child(3) {
   background: #dcf3e6;
+  animation-delay: 0.25s;
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .step-num {
@@ -1079,7 +1100,7 @@
   flex: 1;
   font-size: 0.92rem;
   color: #111114;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .payout-item.you strong {
@@ -1143,9 +1164,42 @@
 
 .history-amount {
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 700;
   color: #16a34a;
   white-space: nowrap;
+}
+
+.history-amount.debit {
+  color: #6f6f7c;
+}
+
+.home-header h1 {
+  font-size: 2.2rem;
+  color: #111114;
+  margin: 0 0 8px;
+}
+
+/* ---------- Investment panel ---------- */
+.inv-panel.locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #fbe3ef, #ffffff);
+  border: 1px dashed #d8a8c0;
+}
+
+.inv-locked-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #111114;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 /* ---------- Suppliers ---------- */

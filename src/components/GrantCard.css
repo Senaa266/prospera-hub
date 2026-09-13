@@ -162,6 +162,31 @@
   transition: all 0.18s;
 }
 
+.btn-ask-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 10px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.84rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  transition: all 0.18s;
+}
+
+.btn-ask-ai:hover {
+  background: #f10178;
+  border-color: #f10178;
+  color: #fff;
+}
+
 .btn-explore svg {
   transition: transform 0.2s;
 }

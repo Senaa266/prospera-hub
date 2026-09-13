@@ -34,6 +34,10 @@ export function isUrgent(date) {
   return diff > 0 && diff < 1000 * 60 * 60 * 24 * 14
 }
 
+export function askAboutGrantPrompt(grant) {
+  return `Break down the "${grant.title}" grant for me: who can apply, what it offers, and honestly whether it fits my business and profile — then give me 3 concrete next steps to prepare an application.`
+}
+
 export async function loadGrants() {
   try {
     const token = localStorage.getItem('token')

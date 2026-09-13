@@ -5,12 +5,12 @@ import Dashboard from './pages/Dashboard'
 import AIChat from './pages/AIChat'
 import Grants from './pages/Grants'
 import GrantEligibility from './pages/GrantEligibility'
+import Suppliers from './pages/Suppliers'
 import Savings from './pages/Savings'
 import SavingsDetail from './pages/SavingsDetail'
-import TrackerDetail from './pages/TrackerDetail'
-import Suppliers from './pages/Suppliers'
-import SupplierDetail from './pages/SupplierDetail'
+import SavingsInvite from './pages/SavingsInvite'
 import Finance from './pages/Finance'
+import TrackerDetail from './pages/TrackerDetail'
 import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
 import ChatLauncher from './components/chat/ChatLauncher'
@@ -83,18 +83,18 @@ function App() {
           }
         />
         <Route
-          path="/suppliers"
+          path="/invite/:token"
           element={
             <RequireAuth>
-              <Suppliers />
+              <SavingsInvite />
             </RequireAuth>
           }
         />
         <Route
-          path="/suppliers/:id"
+          path="/suppliers"
           element={
             <RequireAuth>
-              <SupplierDetail />
+              <Suppliers />
             </RequireAuth>
           }
         />

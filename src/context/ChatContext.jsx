@@ -8,34 +8,33 @@ const ChatContext = createContext(null)
 export function ChatProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false)
   const [initialPrompt, setInitialPrompt] = useState('')
-  const [promptNonce, setPromptNonce] = useState(0)
+  const [activeGrant, setActiveGrant] = useState(null)
 
-  const open = useCallback((prompt = '') => {
-    const next = typeof prompt === 'string' ? prompt.trim() : ''
-    setInitialPrompt(next)
-    if (next) setPromptNonce((value) => value + 1)
+  const open = useCallback((prompt = '', grant = null) => {
+    if (typeof prompt === 'string' && prompt.trim()) {
+      setInitialPrompt(prompt.trim())
+    }
+    if (grant) {
+      setActiveGrant(grant)
+    }
     setIsOpen(true)
   }, [])
 
   const close = useCallback(() => {
     setIsOpen(false)
-    setInitialPrompt('')
-  }, [])
-
-  const clearInitialPrompt = useCallback(() => {
-    setInitialPrompt('')
   }, [])
 
   const toggle = useCallback(() => {
-    setIsOpen((current) => {
-      if (current) setInitialPrompt('')
-      return !current
-    })
+    setIsOpen((current) => !current)
+  }, [])
+
+  const clearGrant = useCallback(() => {
+    setActiveGrant(null)
   }, [])
 
   const value = useMemo(
-    () => ({ isOpen, initialPrompt, promptNonce, open, close, clearInitialPrompt, toggle }),
-    [isOpen, initialPrompt, promptNonce, open, close, clearInitialPrompt, toggle],
+    () => ({ isOpen, initialPrompt, activeGrant, open, close, toggle, clearGrant }),
+    [isOpen, initialPrompt, activeGrant, open, close, toggle, clearGrant],
   )
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
